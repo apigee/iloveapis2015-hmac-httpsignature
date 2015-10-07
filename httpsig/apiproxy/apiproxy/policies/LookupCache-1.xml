@@ -1,0 +1,9 @@
+<LookupCache name='LookupCache-1'>
+  <CacheResource>cache1</CacheResource>
+  <AssignTo>cachelookup</AssignTo> <!-- name of flow variable -->
+  <Scope>Application</Scope>
+  <CacheKey>
+    <Prefix>nonce</Prefix>
+    <KeyFragment ref='request.header.nonce' />
+  </CacheKey>
+</LookupCache>

@@ -1,0 +1,10 @@
+<APIProxy revision='1' name='httpsig-java'>
+  <ConfigurationVersion minorVersion='0' majorVersion='4'/>
+  <CreatedAt>1437177980875</CreatedAt>
+  <CreatedBy>dino</CreatedBy>
+  <Description></Description>
+  <DisplayName>httpsig-java</DisplayName>
+  <LastModifiedAt>1442891536747</LastModifiedAt>
+  <LastModifiedBy>orgAdmin</LastModifiedBy>
+  <TargetEndpoints/>
+</APIProxy>

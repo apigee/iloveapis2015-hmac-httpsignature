@@ -1,0 +1,39 @@
+<AssignMessage name='AssignMessage-Response'>
+  <Remove>
+    <Headers>
+      <Header name='Accept'/>
+      <Header name='user-agent'/>
+      <Header name='Authorization'/>
+      <Header name='Signature'/>
+      <Header name='Date'/>
+      <Header name='X-Powered-By'/>
+      <Header name='X-Forwarded-For'/>
+      <Header name='X-Forwarded-Port'/>
+      <Header name='X-Forwarded-Proto'/>
+    </Headers>
+  </Remove>
+  <Set>
+    <Payload contentType='application/json' variablePrefix='%' variableSuffix='#'><![CDATA[
+{
+  "app.name" : "%developer.app.name#",
+  "apiproduct.name" : "%apiproduct.name#",
+  "signature" : {
+    "keyId" : "%parse_keyId#",
+    "algorithm" : "%parse_algorithm#",
+    "headers" : "%parse_headers#"
+  },
+  "verification": {
+    "isValid" : "%sig_isValid#",
+    "requiredAlgorithm" : "%sig_requiredAlgorithm#",
+    "requiredHeaders" : "%sig_requiredHeaders#",
+    "timeskew" : "%sig_timeskew#",
+    "signingBase" : "%sig_signingBase#",
+    "computedSignature" : "%sig_computedSignature#",
+    "error" : "%sig_error#"
+  }
+}
+]]></Payload>
+    </Set>
+  <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
+  <AssignTo createNew='false' transport='http' type='response'></AssignTo>
+</AssignMessage>

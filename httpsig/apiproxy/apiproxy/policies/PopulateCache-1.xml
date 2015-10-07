@@ -1,0 +1,9 @@
+<PopulateCache name='PopulateCache-1'>
+  <CacheResource>cache1</CacheResource>
+  <Source>request.header.nonce</Source>
+  <Scope>Application</Scope>
+  <CacheKey>
+    <Prefix>nonce</Prefix>
+    <KeyFragment ref='request.header.nonce' />
+  </CacheKey>
+</PopulateCache>

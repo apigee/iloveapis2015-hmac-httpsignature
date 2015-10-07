@@ -1,0 +1,54 @@
+<RaiseFault name='RaiseFault-UnknownRequest'>
+  <DisplayName>RaiseFault-UnknownRequest</DisplayName>
+  <Description>Unknown Request</Description>
+  <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
+  <FaultResponse>
+    <Set>
+      <Payload contentType='application/json'
+               variablePrefix='%' variableSuffix='#'><![CDATA[{
+  "error" : "that request was unknown; try a different request.",
+  "_links" : {
+    "hmac-t1" : {
+      "href": "/hmac-t1",
+      "description" : "Verifies that the HMAC signature exists, uses SHA256. Will Pass."
+    },
+    "hmac-t2" : {
+      "href": "/hmac-t2",
+      "description" : "Demonstrates an incorrect config of the policy. Throws an error"
+    },
+    "hmac-t3" : {
+      "href": "/hmac-t3",
+      "description" : "Verifies that the HMAC256 signature contains these headers: date, Nonce, (request-target), and enforces the nonce."
+    },
+    "rsa-t1" : {
+      "href": "/rsa-t1",
+      "description" : "Verifies that the RSA signature exists."
+    },
+    "rsa-t2" : {
+      "href": "/rsa-t2",
+      "description" : "Verifies that the RSA signature contains these headers: date (request-target)."
+    },
+    "rsa-t3" : {
+      "href": "/rsa-t3",
+      "description" : "Verifies that the RSA signature contains these headers: date (request-target) nonce, and enforces the nonce."
+    },
+    "rsa-t4" : {
+      "href": "/rsa-t4",
+      "description" : "Verifies that the RSA signature uses SHA256, and contains these headers: date (request-target)."
+    },
+    "rsa-t5" : {
+      "href": "/rsa-t5",
+      "description" : "Verifies that the RSA signature uses SHA1, and contains these headers: date (request-target)."
+    },
+    "rsa-t5" : {
+      "href": "/rsa-t5",
+      "description" : "Verifies that the RSA signature uses SHA1, has maxtimeskew of 2 seconds, and contains these headers: date (request-target)."
+    }
+  }
+}
+]]></Payload>
+      <StatusCode>404</StatusCode>
+      <ReasonPhrase>Not Found</ReasonPhrase>
+    </Set>
+  </FaultResponse>
+</RaiseFault>

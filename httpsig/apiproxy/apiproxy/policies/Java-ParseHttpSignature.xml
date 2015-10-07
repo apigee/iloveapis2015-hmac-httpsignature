@@ -1,0 +1,7 @@
+<JavaCallout name='Java-ParseHttpSignature'>
+  <Properties>
+    <Property name='varprefix'>parse</Property>
+  </Properties>
+  <ClassName>com.dinochiesa.httpsignature.SignatureParserCallout</ClassName>
+  <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
+</JavaCallout>

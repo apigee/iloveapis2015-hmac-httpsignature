@@ -1,0 +1,17 @@
+<RaiseFault name='RaiseFault-Nonce'>
+  <DisplayName>RaiseFault-Nonce</DisplayName>
+  <Description>Nonce violation</Description>
+  <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
+  <FaultResponse>
+    <Set>
+      <Payload contentType='application/json'
+               variablePrefix='%' variableSuffix='#'><![CDATA[{
+  "error" : "re-used nonce."
+  }
+}
+]]></Payload>
+      <StatusCode>401</StatusCode>
+      <ReasonPhrase>Unauthorized</ReasonPhrase>
+    </Set>
+  </FaultResponse>
+</RaiseFault>

@@ -1,0 +1,126 @@
+<ProxyEndpoint name='default'>
+  <Description>Default Proxy</Description>
+  <HTTPProxyConnection>
+    <BasePath>/httpsig-java</BasePath>
+    <Properties/>
+    <VirtualHost>default</VirtualHost>
+    <VirtualHost>secure</VirtualHost>
+  </HTTPProxyConnection>
+
+  <FaultRules/>
+
+  <PreFlow name="PreFlow">
+      <Request>
+        <Step><Name>Java-ParseHttpSignature</Name></Step>
+        <Step><Name>VerifyApiKey-1</Name></Step>
+      </Request>
+      <Response/>
+  </PreFlow>
+
+  <PostFlow name="PostFlow">
+      <Request>
+<!--
+        <Step>
+          <Name>RaiseFault-VerificationFailure</Name>
+          <Condition>httpsig.error = true</Condition>
+        </Step>
+-->
+      </Request>
+
+      <Response>
+        <Step><Name>AssignMessage-Response</Name></Step>
+      </Response>
+
+  </PostFlow>
+
+  <Flows>
+    <Flow name='verify RSA 1 - basic'>
+      <Request>
+        <Step><Name>Java-VerifyHttpSignature-RSA1</Name></Step>
+      </Request>
+      <Response/>
+      <Condition>(proxy.pathsuffix ~/ "/rsa-t1") and (request.verb = "GET")</Condition>
+    </Flow>
+    <Flow name='verify RSA 2 - headers'>
+      <Request>
+        <Step><Name>Java-VerifyHttpSignature-RSA2</Name></Step>
+      </Request>
+      <Condition>(proxy.pathsuffix ~/ "/rsa-t2") and (request.verb = "GET")</Condition>
+    </Flow>
+    <Flow name='verify RSA 3 - headers with nonce'>
+      <Request>
+        <Step><Name>Java-VerifyHttpSignature-RSA3</Name></Step>
+        <Step><Name>LookupCache-1</Name></Step>
+        <Step>
+          <Name>RaiseFault-Nonce</Name>
+          <Condition>cachelookup != null</Condition>
+        </Step>
+        <Step><Name>PopulateCache-1</Name></Step>
+      </Request>
+      <Condition>(proxy.pathsuffix ~/ "/rsa-t3") and (request.verb = "GET")</Condition>
+    </Flow>
+    <Flow name='verify RSA 4 - SHA256'>
+      <Request>
+        <Step><Name>Java-VerifyHttpSignature-RSA4</Name></Step>
+      </Request>
+      <Condition>(proxy.pathsuffix ~/ "/rsa-t4") and (request.verb = "GET")</Condition>
+    </Flow>
+    <Flow name='verify RSA 5 - sha1, headers'>
+      <Request>
+        <Step><Name>Java-VerifyHttpSignature-RSA5</Name></Step>
+      </Request>
+      <Condition>(proxy.pathsuffix ~/ "/rsa-t5") and (request.verb = "GET")</Condition>
+    </Flow>
+    <Flow name='verify RSA 6 - sha1, headers, timeskew'>
+      <Request>
+        <Step><Name>Java-VerifyHttpSignature-RSA6</Name></Step>
+      </Request>
+      <Condition>(proxy.pathsuffix ~/ "/rsa-t6") and (request.verb = "GET")</Condition>
+    </Flow>
+
+    <Flow name='verify HMAC 1 - basic'>
+      <Request>
+        <Step><Name>Java-VerifyHttpSignature-HMAC1</Name></Step>
+      </Request>
+      <Condition>(proxy.pathsuffix ~/ "/hmac-t1") and (request.verb = "GET")</Condition>
+    </Flow>
+
+    <Flow name='verify HMAC 2 - no key, error'>
+      <Request>
+        <Step><Name>Java-VerifyHttpSignature-HMAC2</Name></Step>
+      </Request>
+      <Condition>(proxy.pathsuffix ~/ "/hmac-t2") and (request.verb = "GET")</Condition>
+    </Flow>
+
+    <Flow name='verify HMAC 3 - headers, with nonce'>
+      <Request>
+        <Step><Name>Java-VerifyHttpSignature-HMAC3</Name></Step>
+        <Step><Name>LookupCache-1</Name></Step>
+        <Step>
+          <Name>RaiseFault-Nonce</Name>
+          <Condition>cachelookup != null</Condition>
+        </Step>
+        <Step><Name>PopulateCache-1</Name></Step>
+      </Request>
+      <Condition>(proxy.pathsuffix ~/ "/hmac-t3") and (request.verb = "GET")</Condition>
+    </Flow>
+
+    <Flow name='verify HMAC 4 - 256, app-specific-header'>
+      <Request>
+        <Step><Name>Java-VerifyHttpSignature-HMAC4</Name></Step>
+      </Request>
+      <Condition>(proxy.pathsuffix ~/ "/hmac-t4") and (request.verb = "GET")</Condition>
+    </Flow>
+
+    <Flow name='unknown request'>
+      <Request>
+        <Step><Name>RaiseFault-UnknownRequest</Name></Step>
+      </Request>
+      <Response/>
+    </Flow>
+
+  </Flows>
+
+  <RouteRule name='NoRouteRule'/>
+
+</ProxyEndpoint>

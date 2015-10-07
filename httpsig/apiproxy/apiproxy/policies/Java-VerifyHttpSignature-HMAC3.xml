@@ -1,0 +1,10 @@
+<JavaCallout name='Java-VerifyHttpSignature-HMAC3'>
+  <Properties>
+    <Property name='varprefix'>sig</Property>
+    <Property name='algorithm'>hmac-sha256</Property>
+    <Property name='secret-key'>{verifyapikey.VerifyApiKey-1.client_secret}</Property>
+    <Property name='headers'>date (request-target) nonce</Property>
+  </Properties>
+  <ClassName>com.dinochiesa.httpsignature.SignatureVerifierCallout</ClassName>
+  <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
+</JavaCallout>
