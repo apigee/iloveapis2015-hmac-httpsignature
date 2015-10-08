@@ -1,4 +1,4 @@
-#HttpSigVerifier
+## HttpSignature verifier
 
 This directory contains the Java source code and Java jars required to
 compile a Java callout for Apigee Edge that does Verification of HTTP
@@ -121,10 +121,10 @@ sets. It is optional; if you don't set it, it gets the value of
 "httpsig". The result of the parse step is to extract the components of
 the signature as passed in, and set context variables in Edge, like so:
 
-  {prefix}_algorithm
-  {prefix}_keyId
-  {prefix}_signature
-  {prefix}_headers
+- {prefix}_algorithm
+- {prefix}_keyId
+- {prefix}_signature
+- {prefix}_headers
 
 These context variables are then available to subsequent logic steps in
 the proxy flow. This is useful if, for example, the keyId provides some
@@ -202,7 +202,7 @@ following:
 ```
 
 The public-key property accepts RSA keys only, in either PKCS#8 or PKCS#1
-format. (Base64-encoded, including the ----BEGIN ---- and -----END--- lines.)
+format. (Base64-encoded, wrapped in the ----BEGIN ---- and -----END--- lines.)
 
 The above configuration simply verifies that a signature is present. It does not enforce a particular algorithm, or verify that a specific set of headers is present in the signature. To do that, you need to use a configuration like this: 
 
@@ -255,7 +255,6 @@ Parsing a signature.
 ## Example 2
 
 ```xml
-
 <JavaCallout name='Java-VerifyHttpSignature4'>
   <Properties>
     <Property name='varprefix'>sig</Property>
