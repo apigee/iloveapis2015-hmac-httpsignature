@@ -26,16 +26,17 @@ Building the Code
 4. include TWO Java callout policies in your
    apiproxy/resources/policies directory. The first does the parsing, the second 
    performs the signature validation and verification. The first should
-   like this:
-
+   like this:  
+   ```xml
     <JavaCallout name='Java-ParseHttpSignature'>
       <Properties/>
       <ClassName>com.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
       <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
     </JavaCallout>
-
-   The second should look like this: 
-
+   ```  
+  
+   The second should look like this:   
+   ```xml
     <JavaCallout name='Java-VerifyHttpSignature1'>
       <Properties>
         <Property name='public-key'>{verifyapikey.VerifyApiKey-1.public_key}</Property>
@@ -43,6 +44,7 @@ Building the Code
       <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
       <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
     </JavaCallout>
+   ```
 
 5. use the Edge UI, or a command-line tool like pushapi (See
    https://github.com/carloseberhardt/apiploy) or similar to
@@ -56,11 +58,11 @@ Signatures, to the proxy.
 Dependencies
 ------------------
 
-Apigee Edge expressions v1.0
-Apigee Edge message-flow v1.0
-Apache commons lang 2.6
-Apache commons codec 1.7
-Apache commons httpclient 4.3.5
+- Apigee Edge expressions v1.0
+- Apigee Edge message-flow v1.0
+- Apache commons lang 2.6
+- Apache commons codec 1.7
+- Apache commons httpclient 4.3.5
 
 These jars must be available on the classpath for the compile to
 succeed. The build.sh script should download all of these files for
@@ -69,12 +71,12 @@ well.
 
 If you want to download them manually: 
 
-    The first 2 jars are available in Apigee Edge. The first two are
-    produced by Apigee; contact Apigee support to obtain these jars to allow
-    the compile, or get them here: 
-    https://github.com/apigee/api-platform-samples/tree/master/doc-samples/java-cookbook/lib
+  The first 2 jars are available in Apigee Edge. The first two are
+  produced by Apigee; contact Apigee support to obtain these jars to allow
+  the compile, or get them here: 
+  https://github.com/apigee/api-platform-samples/tree/master/doc-samples/java-cookbook/lib
 
-    The Apache jars are also all available in Apigee Edge at runtime. To download them for compile time, you can get them from maven.org. 
+  The Apache jars are also all available in Apigee Edge at runtime. To download them for compile time, you can get them from maven.org. 
 
 
 
