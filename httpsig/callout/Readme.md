@@ -34,7 +34,6 @@ Building the Code
       <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
     </JavaCallout>
    ```  
-  
    The second should look like this:   
    ```xml
     <JavaCallout name='Java-VerifyHttpSignature1'>
