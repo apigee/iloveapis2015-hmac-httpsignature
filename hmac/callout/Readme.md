@@ -8,16 +8,14 @@ Building The Code
 
 1. unpack (if you can read this, you've already done that).
 
-2. You can build one of two ways, with the bash script or with maven.  
-   With script:  ./build.sh  
-   With maven:  mvn clean package
+2. You can build this with maven:  mvn clean package
 
 3. copy target/hmac-edge-callout.jar to your apiproxy/resources/java directory
 
 4. be sure to include a Java callout policy in your
    apiproxy/resources/policies directory. It should look like
-   this:
-
+   this:  
+   ```xml
     <JavaCallout name="JavaHmacHandler" enabled='true'
                  continueOnError='false' async='false'>
       <DisplayName>Java HMAC Creator</DisplayName>
@@ -25,6 +23,7 @@ Building The Code
       <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
       <ResourceURL>java://hmac-edge-callout.jar</ResourceURL>
     </JavaCallout>
+   ```
 
 5. pushapi (See https://github.com/carloseberhardt/apiploy)
 
@@ -33,9 +32,9 @@ Building The Code
 Dependencies
 ------------------
 
-Apigee Edge expressions v1.0
-Apigee Edge message-flow v1.0
-Apache commons codec v1.7
+- Apigee Edge expressions v1.0
+- Apigee Edge message-flow v1.0
+- Apache commons codec v1.7
 
 
 All these jars must be available on the classpath for the compile to
@@ -44,15 +43,15 @@ you, automatically.
 
 If you want to download them manually: 
 
-    The first 2 jars are available in Apigee Edge. The first two are
-    produced by Apigee; contact Apigee support to obtain these jars to allow
-    the compile, or get them here: 
-    https://github.com/apigee/api-platform-samples/tree/master/doc-samples/java-cookbook/lib
+  The first 2 jars are available in Apigee Edge. The first two are
+  produced by Apigee; contact Apigee support to obtain these jars to allow
+  the compile, or get them here: 
+  https://github.com/apigee/api-platform-samples/tree/master/doc-samples/java-cookbook/lib
 
-    The Apache Commons Codec jar is shipped by the Apache Software
-    Foundation. You should compile against v1.7, because that is what
-    Apigee Edge currently uses.
-    http://commons.apache.org/proper/commons-codec/
+  The Apache Commons Codec jar is shipped by the Apache Software
+  Foundation. You should compile against v1.7, because that is what
+  Apigee Edge currently uses.
+  http://commons.apache.org/proper/commons-codec/
 
 Notes:
 --------
@@ -107,7 +106,7 @@ several variables and static strings, like this:
     <!-- name of the variable that holds the key -->
     <Property name="key">{request.queryparam.key}</Property>
     <Property name="algorithm">sha-256</Property>
-    <Property name="string-to-sign">{request.header.date}|{request.verb}|{request.url}</Property>
+    <Property name="string-to-sign">{request.header.date}|{request.verb}|{request.header.host}|{message.uri}</Property>
     <Property name="debug">false</Property>
   </Properties>
   <FaultRules/>
