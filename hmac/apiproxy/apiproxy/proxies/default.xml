@@ -1,0 +1,67 @@
+<ProxyEndpoint name='default'>
+  <Description>Default Proxy</Description>
+  <HTTPProxyConnection>
+    <BasePath>/hmac</BasePath>
+    <Properties/>
+    <VirtualHost>default</VirtualHost>
+    <VirtualHost>secure</VirtualHost>
+  </HTTPProxyConnection>
+
+  <FaultRules/>
+
+  <PreFlow name="PreFlow">
+      <Request/>
+      <Response/>
+  </PreFlow>
+  <PostFlow name="PostFlow">
+      <Request/>
+      <Response>
+        <Step><Name>AssignMessage-CleanResponseHeaders</Name></Step>
+      </Response>
+  </PostFlow>
+
+  <Flows>
+    <Flow name='doc'>
+      <Description>returns documentation on the HMAC calculation</Description>
+      <Request>
+      </Request>
+      <Response>
+        <Step><Name>AssignMessage-DocResponse</Name></Step>
+      </Response>
+      <Condition>(request.verb = "GET")</Condition>
+    </Flow>
+
+    <Flow name='test 1 - payload'>
+      <Description>calculate an HMAC on the post payload</Description>
+      <Request>
+        <Step><Name>Java-CalcHmac-1</Name></Step>
+      </Request>
+      <Response>
+        <Step><Name>AssignMessage-Response</Name></Step>
+      </Response>
+      <Condition>(proxy.pathsuffix MatchesPath "/payload") and (request.verb = "POST")</Condition>
+    </Flow>
+
+    <Flow name='test 2 - headers etc'>
+      <Description>calculate an HMAC on a few headers</Description>
+      <Request>
+        <Step><Name>Java-CalcHmac-2</Name></Step>
+      </Request>
+      <Response>
+        <Step><Name>AssignMessage-Response</Name></Step>
+      </Response>
+      <Condition>(proxy.pathsuffix MatchesPath "/headers") and (request.verb = "POST")</Condition>
+    </Flow>
+
+    <Flow name='unknown request'>
+      <Request>
+        <Step><Name>RaiseFault-UnknownRequest</Name></Step>
+      </Request>
+      <Response/>
+    </Flow>
+
+  </Flows>
+
+  <RouteRule name='NoRouteRule'/>
+
+</ProxyEndpoint>

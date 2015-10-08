@@ -1,0 +1,18 @@
+<AssignMessage name='AssignMessage-Response'>
+  <DisplayName>AssignMessage Response</DisplayName>
+  <Description></Description>
+  <IgnoreUnresolvedVariables>false</IgnoreUnresolvedVariables>
+  <Set>
+    <Payload contentType='text/plain'
+             variablePrefix='%' variableSuffix='#'>key: %hmac.key#
+string-to-sign: %hmac.string-to-sign#
+algorithm: %hmac.alg#
+javaized algorithm: %hmac.javaizedAlg#
+signature-hex: %hmac.signature.hex#
+signature-b64: %hmac.signature.b64#
+
+</Payload>
+    <StatusCode>200</StatusCode>
+    <ReasonPhrase>OK</ReasonPhrase>
+  </Set>
+</AssignMessage>

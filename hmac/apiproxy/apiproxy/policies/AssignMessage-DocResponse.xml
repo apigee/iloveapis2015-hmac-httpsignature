@@ -1,0 +1,46 @@
+<AssignMessage name='AssignMessage-DocResponse'>
+  <DisplayName>AssignMessage Doc Response</DisplayName>
+  <Description></Description>
+  <IgnoreUnresolvedVariables>false</IgnoreUnresolvedVariables>
+  <Set>
+    <Payload contentType='application/json'
+             variablePrefix='%' variableSuffix='#'>{
+  "message" : "Documentation for this API Proxy.",
+  "links": [
+    { "payload" :
+       {
+         "href" : "/hmac/payload?key=abcdefg&amp;alg=sha-256",
+         "verb" : "POST",
+         "info" : "The HMAC will be calculated on the POST payload"
+       }
+    },
+    { "headers" :
+       {
+         "href" : "/hmac/headers?key=abcdefg&amp;alg=sha-256",
+         "verb" : "POST",
+         "info" : "The HMAC will be calculated on a few message headers"
+       }
+    }
+  ],
+  "parameters" : [
+     {
+       "name" : "key",
+       "type" : "query",
+       "vtype" : "string",
+       "doc" : "the key to use to compute the secure hash.",
+       "optional" : true
+     },
+     {
+       "name" : "alg",
+       "type" : "query",
+       "vtype" : "string",
+       "doc" : "the hash algorithm to use.",
+       "valid-values" : ["sha-1", "sha-256", "sha-224", "sha-384", "sha-512"],
+       "optional" : true
+     }
+  ]
+}</Payload>
+    <StatusCode>200</StatusCode>
+    <ReasonPhrase>OK</ReasonPhrase>
+  </Set>
+</AssignMessage>

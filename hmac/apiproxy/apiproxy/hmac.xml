@@ -1,0 +1,12 @@
+<APIProxy revision='1' name='hmac'>
+  <ConfigurationVersion minorVersion='0' majorVersion='4'/>
+  <CreatedAt>1417039409999</CreatedAt>
+  <CreatedBy>dino</CreatedBy>
+  <Description></Description>
+  <DisplayName>hmac</DisplayName>
+  <LastModifiedAt>1444252154950</LastModifiedAt>
+  <LastModifiedBy>orgAdmin</LastModifiedBy>
+  <TargetEndpoints>
+    <TargetEndpoint>default</TargetEndpoint>
+  </TargetEndpoints>
+</APIProxy>

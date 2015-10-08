@@ -1,0 +1,13 @@
+<JavaCallout name='Java-CalcHmac-1'>
+  <DisplayName>Java-CalcHmac-1</DisplayName>
+  <Properties>
+    <!-- name of the variable that holds the key -->
+    <Property name="key">{request.queryparam.key}</Property>
+    <!-- name of the variable that holds the SHA algorithm -->
+    <Property name="algorithm">{request.queryparam.alg}</Property>
+    <Property name="string-to-sign">{message.content}</Property>
+    <Property name="debug">true</Property>
+  </Properties>
+  <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
+  <ResourceURL>java://hmac-edge-callout.jar</ResourceURL>
+</JavaCallout>
