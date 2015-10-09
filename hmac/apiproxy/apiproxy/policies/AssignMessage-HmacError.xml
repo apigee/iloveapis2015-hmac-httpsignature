@@ -1,0 +1,13 @@
+<AssignMessage name='AssignMessage-HmacError'>
+  <DisplayName>AssignMessage Response</DisplayName>
+  <IgnoreUnresolvedVariables>false</IgnoreUnresolvedVariables>
+  <Set>
+    <Payload contentType='text/plain'
+             variablePrefix='%' variableSuffix='#'>
+error: %hmac.error#
+
+</Payload>
+    <StatusCode>400</StatusCode>
+    <ReasonPhrase>OK</ReasonPhrase>
+  </Set>
+</AssignMessage>

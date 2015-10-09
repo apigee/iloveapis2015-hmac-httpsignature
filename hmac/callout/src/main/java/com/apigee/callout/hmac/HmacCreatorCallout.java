@@ -13,7 +13,6 @@ import java.util.HashMap;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-// apache commons code and lang
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -23,7 +22,6 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 import com.apigee.callout.hmac.TemplateString;
-
 
 @IOIntensive
 public class HmacCreatorCallout implements Execution {
@@ -65,6 +63,18 @@ public class HmacCreatorCallout implements Execution {
             throw new IllegalStateException("key is null or empty.");
         }
         return key;
+    }
+
+    private String getHmac(MessageContext msgCtxt) throws Exception {
+        String hmac = (String) this.properties.get("hmac-base64");
+        if (hmac == null || hmac.equals("")) {
+            return null;
+        }
+        hmac = resolvePropertyValue(hmac, msgCtxt);
+        if (hmac == null || hmac.equals("")) {
+            throw new IllegalStateException("hmac-base64 resolves to null or empty.");
+        }
+        return hmac;
     }
 
     private boolean getDebug(MessageContext msgCtxt) throws Exception {
@@ -119,7 +129,7 @@ public class HmacCreatorCallout implements Execution {
     public ExecutionResult execute(MessageContext msgCtxt,
                                    ExecutionContext exeCtxt) {
         try {
-            String SIGNING_KEY = getKey(msgCtxt);
+            String signingKey = getKey(msgCtxt);
             String stringToSign = getStringToSign(msgCtxt);
             String algorithm = getAlgorithm(msgCtxt);
             boolean debug = getDebug(msgCtxt);
@@ -131,19 +141,28 @@ public class HmacCreatorCallout implements Execution {
             }
 
             Mac hmac = Mac.getInstance(javaizedAlg);
-            SecretKeySpec key = new SecretKeySpec(SIGNING_KEY.getBytes(), javaizedAlg);
+            SecretKeySpec key = new SecretKeySpec(signingKey.getBytes(), javaizedAlg);
             hmac.init(key);
             byte[] hmacBytes = hmac.doFinal(stringToSign.getBytes("UTF-8"));
             String sigHex = Hex.encodeHexString(hmacBytes);
             String sigB64 = Base64.encodeBase64String(hmacBytes);
 
             if (debug) {
-                msgCtxt.setVariable("hmac.key", SIGNING_KEY);
+                msgCtxt.setVariable("hmac.key", signingKey);
             }
             msgCtxt.setVariable("hmac.string-to-sign", stringToSign);
             msgCtxt.setVariable("hmac.alg", algorithm);
             msgCtxt.setVariable("hmac.signature.hex", sigHex);
             msgCtxt.setVariable("hmac.signature.b64", sigB64);
+
+            // presence of hmac property indicates verification wanted
+            String expectedHmac = getHmac(msgCtxt);
+            if (expectedHmac !=null) {
+                if (!sigB64.equals(expectedHmac)) {
+                    msgCtxt.setVariable("hmac.error", "HMAC does not verify");
+                    return ExecutionResult.ABORT;
+                }
+            }
         }
         catch (Exception e){
             msgCtxt.setVariable("hmac.error", e.getMessage());

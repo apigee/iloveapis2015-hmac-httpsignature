@@ -10,7 +10,7 @@ a message.
 
 Apigee Edge doesn't currently contain "built-in" capability to create or
 calculate HMACs on arbitrary payloads. This proxy shows how to use a
-Java callout to do that.  
+simple Java callout to do that.  
 
 You can take advantage of this callout without knowing Java and without
 any additional coding. Just drop the policy into your API proxy and go.
@@ -20,24 +20,45 @@ This API Proxy demonstrates how you can do that.
 Invoking
 ========
 
-There is just one request exposed by this proxy:
+
+** Generate an hmac on the request body
 
 Generate an HMAC on a given payload using alg=sha-256, with key secret123: 
 
+```
     curl -i -X POST -d 'the quick brown fox...' \
        "http://myorg-myenv.apigee.net/hmac/payload?alg=sha-256&key=secret123"
+```
 
 The response is plain text like this: 
 
 ```
 key: secret123
-stringToSign: the quick brown fox...
+string-to-sign: the quick brown fox...
 algorithm: sha-256
 javaized algorithm: HmacSHA256
-signature: bf41d260dacd49be2d09e7c80f0cb5614bce8997c7a371994daafd606a6c4e2f
+signature-hex: bf41d260dacd49be2d09e7c80f0cb5614bce8997c7a371994daafd606a6c4e2f
+signature-b64: v0HSYNrNSb4tCefIDwy1YUvOiZfHo3GZTar9YGpsTi8=
 ```
 
-You can also compute an HMAC on various headers and other values in the message: 
+** Validating
+
+You can validate an hmac by specifying the hmac-base64 header and invoking a different url path, like this:
+
+
+```
+curl -i -X POST -d 'the quick brown fox...' \
+   -H hmac-base64 : v0HSYNrNSb4tCefIDwy1YUvOiZfHo3GZTar9YGpsTi8= \
+   "http://myorg-myenv.apigee.net/hmac/validate-payload?alg=sha-256&key=secret123"
+```
+
+You will get a 400 error if the provided signature does not match what is calculated by the proxy. 
+
+
+** Generating HMAC on compound Strings
+
+
+This proxy also has an endpoint that will compute an HMAC on various headers and other values in the message. Invoke it like this:
 
 ```
   curl -i -X POST -d '' \
@@ -56,6 +77,9 @@ signature-hex: 2d9af1e471d593854627afef4b83332f59cccc4d0e21b1392f239324e480abd6
 signature-b64: LZrx5HHVk4VGJ6/vS4MzL1nMzE0OIbE5LyOTJOSAq9Y=
 
 ```
+
+
+** Help
 
 Finally, 
 you can get help on this demonstration API Proxy like this: 

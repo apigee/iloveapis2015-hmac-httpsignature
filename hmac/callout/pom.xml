@@ -13,6 +13,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.version>1.7</java.version>
+    <apiproxy.java.rsrc.dir>../apiproxy/apiproxy/resources/java</apiproxy.java.rsrc.dir>
   </properties>
 
   <dependencies>
@@ -110,7 +111,7 @@ these commands:
         </executions>
         <configuration />
       </plugin>
-<!--
+
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
@@ -118,8 +119,17 @@ these commands:
             <phase>package</phase>
             <configuration>
               <tasks>
-                < Since the jar file name used is javacallout.jar" >
-                <copy file="${project.build.directory}/${project.artifactId}.jar" todir="../apiproxy/resources/java" />
+                <copy todir="${apiproxy.java.rsrc.dir}">
+                  <fileset dir="${project.build.directory}">
+                    <include name="${project.artifactId}.jar"/>
+                    <!--
+                         include any additional dependencies here
+
+                    <include name="lib/guava-18.0.jar"/>
+                    -->
+                  </fileset>
+                  <mapper type="flatten"/>
+                </copy>
               </tasks>
             </configuration>
             <goals>
@@ -128,7 +138,7 @@ these commands:
           </execution>
         </executions>
       </plugin>
--->
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>

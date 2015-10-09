@@ -5,6 +5,19 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 
+/*
+ * TemplateString
+ *
+ * This class is used to convert a string in which urly-braces denote
+ * variables to be replaced, into a form that uses ${xxx}, which is
+ * required by the StrSubstitutor class which is part of Apache
+ * commons.lang.
+ *
+ * It is used by Edge callout classes to read and "resolve" property
+ * values that may contain multiple variable references , or variable
+ * references surrounded by other text, or both.
+ *
+ */
 public class TemplateString {
     private final Pattern tmpltPattern =
         Pattern.compile("\\{([^\\}]+)\\}", Pattern.CASE_INSENSITIVE);

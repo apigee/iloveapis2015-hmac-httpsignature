@@ -98,7 +98,6 @@ If you omit the "string-to-sign" property, the policy will default to computing 
 You can also use a string-to-sign that concatenates the values of 
 several variables and static strings, like this:
 
-
 ```xml
 <JavaCallout name='JavaCallout-HMAC-Create' enabled='true'>
   <DisplayName>JavaCallout-HMAC-Create</DisplayName>
@@ -116,3 +115,36 @@ several variables and static strings, like this:
 ```
 
 In this case, the policy will resolve each of the variables surrounded by curlies and assign the resulting concatenation to string-to-sign. 
+
+
+**Validating** 
+
+You can configure the policy to validate an hmac as well, by including the property named "hmac-base64" in the configuration. Like this:
+
+```xml
+<JavaCallout name='JavaCallout-HMAC-Validate' enabled='true'>
+  <DisplayName>JavaCallout-HMAC-Create</DisplayName>
+  <Properties>
+    <!-- name of the variable that holds the key -->
+    <Property name="key">{request.queryparam.key}</Property>
+    <Property name="algorithm">sha-256</Property>
+    <Property name="string-to-sign">{request.header.date}|{request.verb}|{request.header.host}|{message.uri}</Property>
+    <Property name="hmac-base64">{request.header.hmac}</Property>
+  </Properties>
+  <FaultRules/>
+  <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
+  <ResourceURL>java://hmac-edge-callout.jar</ResourceURL>
+</JavaCallout>
+```
+
+The policy will raise a fault if the calculated hmac does not match the
+provided hmac.  In fault rules, you can test hmac.error :
+
+```xml
+  <FaultRules>
+    <FaultRule name='rule1'>
+      <Step><Name>AssignMessage-HmacError</Name></Step>
+      <Condition>hmac.error != null</Condition>
+    </FaultRule>
+  </FaultRules>
+```

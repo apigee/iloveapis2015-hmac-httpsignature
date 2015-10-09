@@ -7,7 +7,12 @@
     <VirtualHost>secure</VirtualHost>
   </HTTPProxyConnection>
 
-  <FaultRules/>
+  <FaultRules>
+    <FaultRule name='rule1'>
+      <Step><Name>AssignMessage-HmacError</Name></Step>
+      <Condition>hmac.error != null</Condition>
+    </FaultRule>
+  </FaultRules>
 
   <PreFlow name="PreFlow">
       <Request/>
@@ -31,7 +36,7 @@
       <Condition>(request.verb = "GET")</Condition>
     </Flow>
 
-    <Flow name='test 1 - payload'>
+    <Flow name='calc hmac - payload'>
       <Description>calculate an HMAC on the post payload</Description>
       <Request>
         <Step><Name>Java-CalcHmac-1</Name></Step>
@@ -42,7 +47,18 @@
       <Condition>(proxy.pathsuffix MatchesPath "/payload") and (request.verb = "POST")</Condition>
     </Flow>
 
-    <Flow name='test 2 - headers etc'>
+    <Flow name='validate hmac - payload'>
+      <Description>Validate an HMAC on the post payload</Description>
+      <Request>
+        <Step><Name>Java-ValidateHmac-1</Name></Step>
+      </Request>
+      <Response>
+        <Step><Name>AssignMessage-Response</Name></Step>
+      </Response>
+      <Condition>(proxy.pathsuffix MatchesPath "/validate-payload") and (request.verb = "POST")</Condition>
+    </Flow>
+
+    <Flow name='calc hmac - headers etc'>
       <Description>calculate an HMAC on a few headers</Description>
       <Request>
         <Step><Name>Java-CalcHmac-2</Name></Step>
