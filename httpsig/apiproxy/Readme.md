@@ -39,15 +39,23 @@ The server of such a request can verify the signature and reject a request for w
 
 -----
 
-This API proxy receives the signature, then verifies it. 
- If HMAC, it verifies by re-computing the signature based on the headers the server has received, and comparing the computed sig with the received sig. 
- If RSA, it verifies the signature by decrypting with the public key. 
+This API proxy receives the signature, then verifies it.  If HMAC, it
+verifies by re-computing the signature based on the headers the server
+has received, and comparing the computed sig with the received sig.  If
+RSA, it verifies the signature by decrypting with the public key.
 
-The verification is done in two phases: parse + verify.  Both are done in Java, for performance reasons. It's possible to also do this in Javascript, but it's faster in Java. 
+The verification is done in two phases: parse + verify.  Both are done
+in Java, for performance reasons. It's possible to also do this in
+Javascript, but it's faster in Java.
 
-This proxy handles signatures with either RSA or HMAC algorithms. When verifying an RSA signature, it interprets keyID as client_id and
-reads a "custom attribute" attached to the developer app named public_key to get the PEM-encoded public key. This means the client needs to
-compute its signature using the corresponding private key, which it does not share with the api proxy.   When verifying an HMAC signature, this proxy uses the keyId to lookup the consumer secret, which it uses as the shared secret for encryption. 
+This proxy handles signatures with either RSA or HMAC algorithms. When
+verifying an RSA signature, it interprets keyID as client_id and reads a
+"custom attribute" attached to the developer app named public_key to get
+the PEM-encoded public key. This means the client needs to compute its
+signature using the corresponding private key, which it does not share
+with the api proxy.  When verifying an HMAC signature, this proxy uses
+the keyId to lookup the consumer secret, which it uses as the shared
+secret for encryption.
 
 To invoke the apiproxy, you need to compute the signature according to
 the spec.  There's a companion client for this proxy written in nodejs

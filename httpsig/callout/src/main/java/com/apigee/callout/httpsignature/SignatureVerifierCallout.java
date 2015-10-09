@@ -31,6 +31,13 @@
 
 package com.apigee.callout.httpsignature;
 
+import com.apigee.flow.execution.ExecutionContext;
+import com.apigee.flow.execution.ExecutionResult;
+import com.apigee.flow.execution.IOIntensive;
+import com.apigee.flow.execution.spi.Execution;
+import com.apigee.flow.message.MessageContext;
+import com.apigee.flow.message.Message;
+
 import java.io.InputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -50,24 +57,17 @@ import java.security.PublicKey;
 import java.security.KeyFactory;
 import java.security.Signature;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 
 // for HMAC
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-// for both
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.http.client.utils.DateUtils;
-
-import com.apigee.flow.execution.ExecutionContext;
-import com.apigee.flow.execution.ExecutionResult;
-import com.apigee.flow.execution.IOIntensive;
-import com.apigee.flow.execution.spi.Execution;
-import com.apigee.flow.message.MessageContext;
-import com.apigee.flow.message.Message;
 
 
 import com.apigee.callout.httpsignature.HttpSignature;
@@ -81,24 +81,21 @@ public class SignatureVerifierCallout implements Execution {
         this.properties = properties;
     }
 
-    private String getVarprefix() throws Exception {
-        String varprefix = (String) this.properties.get("varprefix");
-        if (varprefix == null || varprefix.equals("")) {
-            return "httpsig"; // default prefix
-        }
-        return varprefix;
-    }
-
     private String getRequiredAlgorithm(MessageContext msgCtxt) throws Exception {
         String algorithm = (String) this.properties.get("algorithm");
-        if (algorithm == null) { return null; }
+        if (algorithm == null) {
+            // to prevent attacks, ALWAYS require an algorithm
+            throw new IllegalStateException("algorithm is not specified.");
+        }
         algorithm = algorithm.trim();
-        if (algorithm.equals("")) { return null; }
+        if (algorithm.equals("")) {
+            // to prevent attacks, ALWAYS require an algorithm
+            throw new IllegalStateException("algorithm is not specified.");
+        }
 
         algorithm = resolvePropertyValue(algorithm, msgCtxt);
         if (algorithm == null || algorithm.equals("")) {
-            return null;
-            // throw new IllegalStateException("algorithm resolves to an empty string.");
+            throw new IllegalStateException("algorithm resolves to an empty string.");
         }
         return algorithm;
     }
@@ -114,14 +111,16 @@ public class SignatureVerifierCallout implements Execution {
         return Long.parseLong(timeskew, 10);
     }
 
-    private String[] getRequiredHeaders(MessageContext msgCtxt) /* throws Exception */ {
+    private String[] getRequiredHeaders(MessageContext msgCtxt)
+        /* throws Exception */ {
         String headers = (String) this.properties.get("headers");
         if (headers == null) { return null; }
         headers = headers.trim();
         if (headers.equals("")) { return null; }
         headers = resolvePropertyValue(headers, msgCtxt);
         if (headers == null || headers.equals("")) {
-            // Question: is this an error?  I guess not.
+            // Uncomment the below to force configuration to require a
+            // headers property
             //throw new IllegalStateException("headers resolves to an empty string");
             return null;
         }
@@ -183,28 +182,6 @@ public class SignatureVerifierCallout implements Execution {
         return httpsig;
     }
 
-    private static String getCleanEncodedKeyString(String publicKey)
-        throws InvalidKeySpecException {
-        publicKey = publicKey.trim();
-        if (publicKey.startsWith("-----BEGIN RSA PUBLIC KEY-----") &&
-            publicKey.endsWith("-----END RSA PUBLIC KEY-----")) {
-            // figure PKCS#1
-            publicKey = publicKey.substring(30, publicKey.length() - 28);
-            publicKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A" + publicKey;
-        }
-        else if (publicKey.startsWith("-----BEGIN PUBLIC KEY-----") &&
-            publicKey.endsWith("-----END PUBLIC KEY-----")) {
-            // figure PKCS#8
-            publicKey = publicKey.substring(26, publicKey.length() - 24);
-        }
-        else {
-            throw new InvalidKeySpecException("invalid key format");
-        }
-
-        publicKey = publicKey.replaceAll("[\\r|\\n| ]","");
-        return publicKey;
-    }
-
     private static InputStream getResourceAsStream(String resourceName)
       throws IOException {
         // forcibly prepend a slash
@@ -226,42 +203,87 @@ public class SignatureVerifierCallout implements Execution {
     private PublicKey getPublicKey(MessageContext msgCtxt)
         throws IOException,
                NoSuchAlgorithmException,
-               InvalidKeySpecException
+               InvalidKeySpecException,
+               CertificateException
     {
-        byte[] keyBytes = null;
-        String publicKey = (String) this.properties.get("public-key");
-        if (publicKey==null) {
-            String pemfile = (String) this.properties.get("pemfile");
-            if (pemfile == null || pemfile.equals("")) {
-                throw new IllegalStateException("configuration error: must specify pemfile or public-key when algorithm is RS*");
-            }
-            pemfile = resolvePropertyValue(pemfile, msgCtxt);
-            if (pemfile == null || pemfile.equals("")) {
-                throw new IllegalStateException("configuration error: pemfile resolves to nothing; invalid when algorithm is RS*");
-            }
+        String publicKeyString = (String) this.properties.get("public-key");
 
-            InputStream in = getResourceAsStream(pemfile);
-            keyBytes = new byte[in.available()];
-            in.read(keyBytes);
-            in.close();
+        // There are various ways to specify the public key.
 
-            publicKey = new String(keyBytes, "UTF-8");
-        }
-        else {
-            if (publicKey.equals("")) {
-                throw new IllegalStateException("configuration error: public-key must be non-empty");
+        // Try "public-key"
+        if (publicKeyString !=null) {
+            if (publicKeyString.equals("")) {
+                throw new IllegalStateException("public-key must be non-empty");
             }
-            publicKey = resolvePropertyValue(publicKey, msgCtxt);
-            if (publicKey==null || publicKey.equals("")) {
-                throw new IllegalStateException("configuration error: public-key variable resolves to empty; invalid when algorithm is RS*");
+            publicKeyString = resolvePropertyValue(publicKeyString, msgCtxt);
+
+            if (publicKeyString==null || publicKeyString.equals("")) {
+                throw new IllegalStateException("public-key variable resolves to empty; invalid when algorithm is RS*");
             }
+            PublicKey key = KeyUtils.publicKeyStringToPublicKey(publicKeyString);
+            if (key==null) {
+                throw new InvalidKeySpecException("must be PKCS#1 or PKCS#8");
+            }
+            return key;
         }
 
-        publicKey = getCleanEncodedKeyString(publicKey);
-        keyBytes = Base64.decodeBase64(publicKey);
-        X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        PublicKey key = keyFactory.generatePublic(spec);
+        // // Try "modulus" + "exponent"
+        // String modulus = (String) this.properties.get("modulus");
+        // String exponent = (String) this.properties.get("exponent");
+        //
+        // if ((modulus != null) && (exponent != null)) {
+        //     modulus = resolvePropertyValue(modulus, msgCtxt);
+        //     exponent = resolvePropertyValue(exponent, msgCtxt);
+        //
+        //     if (modulus==null || modulus.equals("") ||
+        //         exponent==null || exponent.equals("")) {
+        //         throw new IllegalStateException("modulus or exponent resolves to empty; invalid when algorithm is RS*");
+        //     }
+        //
+        //     PublicKey key = KeyUtils.pubKeyFromModulusAndExponent(modulus, exponent);
+        //     return key;
+        // }
+
+        // Try certificate
+        String certString = (String) this.properties.get("certificate");
+        if (certString !=null) {
+            if (certString.equals("")) {
+                throw new IllegalStateException("certificate must be non-empty");
+            }
+            certString = resolvePropertyValue(certString, msgCtxt);
+            //msgCtxt.setVariable("jwt_certstring", certString);
+            if (certString==null || certString.equals("")) {
+                throw new IllegalStateException("certificate variable resolves to empty; invalid when algorithm is RS*");
+            }
+            PublicKey key = KeyUtils.certStringToPublicKey(certString);
+            if (key==null) {
+                throw new InvalidKeySpecException("invalid certificate format");
+            }
+            return key;
+        }
+
+        // last chance
+        String pemfile = (String) this.properties.get("pemfile");
+        if (pemfile == null || pemfile.equals("")) {
+            throw new IllegalStateException("must specify pemfile or public-key or certificate when algorithm is RS*");
+        }
+        pemfile = resolvePropertyValue(pemfile, msgCtxt);
+        //msgCtxt.setVariable("jwt_pemfile", pemfile);
+        if (pemfile == null || pemfile.equals("")) {
+            throw new IllegalStateException("pemfile resolves to nothing; invalid when algorithm is RS*");
+        }
+
+        InputStream in = getResourceAsStream(pemfile);
+        byte[] keyBytes = new byte[in.available()];
+        in.read(keyBytes);
+        in.close();
+        publicKeyString = new String(keyBytes, "UTF-8");
+
+        // allow pemfile resolution as Certificate or Public Key
+        PublicKey key = KeyUtils.pemFileStringToPublicKey(publicKeyString);
+        if (key==null) {
+            throw new InvalidKeySpecException("invalid pemfile format");
+        }
         return key;
     }
 
@@ -280,10 +302,11 @@ public class SignatureVerifierCallout implements Execution {
 
 
     // If the value of a property value begins and ends with curlies,
-    // eg, {apiproxy.name}, then "resolve" the value by de-referencing
-    // the context variable whose name appears between the curlies.
+    // and has no intervening spaces, eg, {apiproxy.name}, then
+    // "resolve" the value by de-referencing the context variable whose
+    // name appears between the curlies.
     private String resolvePropertyValue(String spec, MessageContext msgCtxt) {
-        if (spec.startsWith("{") && spec.endsWith("}")) {
+        if (spec.startsWith("{") && spec.endsWith("}") && (spec.indexOf(" ") == -1)) {
             String varname = spec.substring(1,spec.length() - 1);
             String value = msgCtxt.getVariable(varname);
             return value;
@@ -329,11 +352,10 @@ public class SignatureVerifierCallout implements Execution {
     public ExecutionResult execute(MessageContext msgCtxt,
                                    ExecutionContext exeCtxt) {
         String varName;
-        String varprefix = "unknown";
+        String varprefix = "httpsig";
         ExecutionResult result = ExecutionResult.ABORT;
         Boolean isValid = false;
         try {
-            varprefix = getVarprefix();
             // 1. retrieve and parse the full signature header payload
             HttpSignature sigObject = getFullSignature(msgCtxt);
 
@@ -341,16 +363,15 @@ public class SignatureVerifierCallout implements Execution {
             // and check that the actual algorithm in the sig is as required.
             String actualAlgorithm = sigObject.getAlgorithm();
             String requiredAlgorithm = getRequiredAlgorithm(msgCtxt);
-            if (requiredAlgorithm != null) {
-                varName = varprefix + "_requiredAlgorithm";
-                msgCtxt.setVariable(varName, requiredAlgorithm);
-                if (!HttpSignature.supportedAlgorithms.containsKey(requiredAlgorithm)) {
-                    throw new Exception("unsupported algorithm: " + requiredAlgorithm);
-                }
 
-                if (!actualAlgorithm.equals(requiredAlgorithm)) {
-                    throw new Exception("algorithm used in signature ("+ actualAlgorithm +") is not as required ("+ requiredAlgorithm +")");
-                }
+            varName = varprefix + "_requiredAlgorithm";
+            msgCtxt.setVariable(varName, requiredAlgorithm);
+            if (!HttpSignature.supportedAlgorithms.containsKey(requiredAlgorithm)) {
+                throw new Exception("unsupported algorithm: " + requiredAlgorithm);
+            }
+
+            if (!actualAlgorithm.equals(requiredAlgorithm)) {
+                throw new Exception("algorithm used in signature ("+ actualAlgorithm +") is not as required ("+ requiredAlgorithm +")");
             }
 
             // 3. if there are any headers that are configured to be required,
