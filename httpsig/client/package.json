@@ -1,0 +1,24 @@
+{
+  "name": "signature-client",
+  "description": "client that uses node-http-signature to generate a signed request",
+  "version": "0.0.1",
+  "license": "MIT",
+  "author": "Apigee, Inc",
+  "contributors": [
+    "Dino Chiesa <dchiesa@apigee.com>"
+  ],
+  "keywords": [
+    "https",
+    "signature",
+    "request"
+  ],
+  "engines": {
+    "node": ">=0.12"
+  },
+  "main": "rsaClient.js",
+  "dependencies": {
+    "node-getopt": "0.2.3",
+    "node-http-signature": "git+https://github.com/DinoChiesa/node-http-signature.git",
+    "node-uuid": "^1.4.1"
+  }
+}
