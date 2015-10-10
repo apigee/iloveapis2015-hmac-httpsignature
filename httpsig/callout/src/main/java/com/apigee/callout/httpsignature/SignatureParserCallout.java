@@ -42,14 +42,6 @@ public class SignatureParserCallout implements Execution {
         this.properties = properties;
     }
 
-    private String getVarprefix() throws Exception {
-        String varprefix = (String) this.properties.get("varprefix");
-        if (varprefix == null || varprefix.equals("")) {
-            return "httpsig"; // default prefix
-        }
-        return varprefix;
-    }
-
     private String getMultivaluedHeader(MessageContext msgCtxt, String header) {
         String name = header + ".values";
         String separator = ",";
@@ -144,12 +136,10 @@ public class SignatureParserCallout implements Execution {
     public ExecutionResult execute(MessageContext msgCtxt,
                                    ExecutionContext exeCtxt) {
         String varName;
-        String varprefix = "unknown";
+        String varprefix = "httpsig";
         ExecutionResult result = ExecutionResult.ABORT;
         Boolean isValid = false;
         try {
-            varprefix = getVarprefix();
-
             // get the full signature header payload
             HttpSignature sigObject = getFullSignature(msgCtxt);
 

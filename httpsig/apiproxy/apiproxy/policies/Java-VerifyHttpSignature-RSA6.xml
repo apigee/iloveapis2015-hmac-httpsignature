@@ -1,9 +1,9 @@
 
 <JavaCallout name='Java-VerifyHttpSignature-RSA6'>
   <Properties>
+    <Property name='algorithm'>rsa-sha256</Property>
     <Property name='public-key'>{verifyapikey.VerifyApiKey-1.public_key}</Property>
     <Property name='headers'>date (request-target)</Property>
-    <Property name='algorithm'>rsa-sha256</Property>
     <Property name='maxtimeskew'>6</Property> <!-- seconds -->
   </Properties>
   <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>

@@ -79,16 +79,28 @@ that depends on the node http-signature modile.  httpSigClient.js
 
 ** Notes:
 
+There is some setup required before you can use this API proxy. 
+
 1. This apiproxy must be included in an API Product. The proxy calls
   VerifyAPIKey using the keyId passed in the Signature header as the
   client_id. Upon success, it retrieves metadata attached to the
   developer app and uses it for verifying the signature.  For HMAC
   algorithms, the proxy uses the client_secret (aka consumer_secret) as
   the secret key.  For RSA algorithms, the proxy uses the custom
-  attribute named "public_key".
+  attribute named "public_key".  
+  
+  This means you must configure a developer app, which has access to the
+  API product. When you invoke the API with the node client, specify the
+  client id and client secret that is provisioned for the developer app.
 
-2. You need to create a cache called "cache1" in your environment before
+2. You also need to create a cache called "cache1" in your environment before
 deploying this api proxy.
+
+3. finally, To invoke the APIs in this proxy, you will need to use an
+intelligent client, something that can compute and transmit http
+signatures. The accompanying httpSigClient.js file (See the client
+directory) will do so.  You can also write your own client using any
+other language.
 
 
 ** Bugs:

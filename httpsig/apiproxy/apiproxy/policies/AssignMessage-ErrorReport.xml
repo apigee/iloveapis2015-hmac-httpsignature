@@ -1,4 +1,4 @@
-<AssignMessage name='AssignMessage-Response'>
+<AssignMessage name='AssignMessage-ErrorReport'>
   <Remove>
     <Headers>
       <Header name='Accept'/>
@@ -15,22 +15,7 @@
   <Set>
     <Payload contentType='application/json' variablePrefix='%' variableSuffix='#'><![CDATA[
 {
-  "app.name" : "%developer.app.name#",
-  "apiproduct.name" : "%apiproduct.name#",
-  "signature" : {
-    "keyId" : "%httpsig_keyId#",
-    "algorithm" : "%httpsig_algorithm#",
-    "headers" : "%httpsig_headers#"
-  },
-  "verification": {
-    "isValid" : "%httpsig_isValid#",
-    "requiredAlgorithm" : "%httpsig_requiredAlgorithm#",
-    "requiredHeaders" : "%httpsig_requiredHeaders#",
-    "timeskew" : "%httpsig_timeskew#",
-    "signingBase" : "%httpsig_signingBase#",
-    "computedSignature" : "%httpsig_computedSignature#",
-    "error" : "%httpsig_error#"
-  }
+  "error" : "%httpsig_error#"
 }
 ]]></Payload>
     </Set>

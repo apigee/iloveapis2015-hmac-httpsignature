@@ -7,7 +7,12 @@
     <VirtualHost>secure</VirtualHost>
   </HTTPProxyConnection>
 
-  <FaultRules/>
+  <FaultRules>
+    <FaultRule name='rule1'>
+      <Step><Name>AssignMessage-ErrorReport</Name></Step>
+      <Condition>httpsig_error != null</Condition>
+    </FaultRule>
+  </FaultRules>
 
   <PreFlow name="PreFlow">
       <Request>
@@ -18,14 +23,7 @@
   </PreFlow>
 
   <PostFlow name="PostFlow">
-      <Request>
-<!--
-        <Step>
-          <Name>RaiseFault-VerificationFailure</Name>
-          <Condition>httpsig.error = true</Condition>
-        </Step>
--->
-      </Request>
+      <Request/>
 
       <Response>
         <Step><Name>AssignMessage-Response</Name></Step>

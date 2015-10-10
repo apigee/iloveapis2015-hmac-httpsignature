@@ -1,5 +1,5 @@
 <VerifyAPIKey name='VerifyApiKey-1'>
-  <APIKey ref='parse_keyId'></APIKey>
+  <APIKey ref='httpsig_keyId'></APIKey>
   <!--
       Variables populated by this policy: verifyapikey.{policy_name}.
 

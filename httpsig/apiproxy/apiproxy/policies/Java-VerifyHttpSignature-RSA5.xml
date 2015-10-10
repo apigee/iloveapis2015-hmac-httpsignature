@@ -1,9 +1,8 @@
 <JavaCallout name='Java-VerifyHttpSignature-RSA5'>
   <Properties>
-    <Property name='varprefix'>sig</Property>
+    <Property name='algorithm'>rsa-sha1</Property>
     <Property name='public-key'>{verifyapikey.VerifyApiKey-1.public_key}</Property>
     <Property name='headers'>date (request-target)</Property>
-    <Property name='algorithm'>rsa-sha1</Property>
   </Properties>
   <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
   <ResourceURL>java://httpsig-edge-callout.jar</ResourceURL>

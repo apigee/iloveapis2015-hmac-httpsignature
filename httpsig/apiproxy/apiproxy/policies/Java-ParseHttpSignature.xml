@@ -1,7 +1,5 @@
 <JavaCallout name='Java-ParseHttpSignature'>
-  <Properties>
-    <Property name='varprefix'>parse</Property>
-  </Properties>
+  <Properties/>
   <ClassName>com.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
   <ResourceURL>java://httpsig-edge-callout.jar</ResourceURL>
 </JavaCallout>

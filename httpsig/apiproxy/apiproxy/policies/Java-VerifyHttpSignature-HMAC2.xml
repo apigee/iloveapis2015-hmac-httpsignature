@@ -1,6 +1,5 @@
 <JavaCallout name='Java-VerifyHttpSignature-HMAC2'>
   <Properties>
-    <Property name='varprefix'>sig</Property>
     <Property name='algorithm'>hmac-sha256</Property>
     <!-- notice, secret-key is omitted.  This will cause a runtime error. -->
     <!--  <Property name='secret-key'>{whatever}</Property> -->
