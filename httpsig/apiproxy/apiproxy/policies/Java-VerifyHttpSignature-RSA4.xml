@@ -6,5 +6,5 @@
     <Property name='algorithm'>rsa-sha256</Property>
   </Properties>
   <ClassName>com.dinochiesa.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
+  <ResourceURL>java://httpsig-edge-callout.jar</ResourceURL>
 </JavaCallout>

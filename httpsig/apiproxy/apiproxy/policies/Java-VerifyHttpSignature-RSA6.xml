@@ -7,5 +7,5 @@
     <Property name='maxtimeskew'>6</Property> <!-- seconds -->
   </Properties>
   <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
+  <ResourceURL>java://httpsig-edge-callout.jar</ResourceURL>
 </JavaCallout>

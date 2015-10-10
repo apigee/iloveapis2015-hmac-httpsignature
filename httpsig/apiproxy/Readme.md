@@ -62,7 +62,7 @@ the spec.  There's a companion client for this proxy written in nodejs
 that depends on the node http-signature modile.  httpSigClient.js
 
 
-Resources: 
+** Resources: 
 
   /rsa-t1
   /rsa-t2
@@ -74,11 +74,12 @@ Resources:
   /hmac-t1
   /hmac-t2
   /hmac-t3
+  /hmac-t4
 
 
-Notes:
+** Notes:
 
-  This apiproxy must be included in an API Product. The proxy calls
+1. This apiproxy must be included in an API Product. The proxy calls
   VerifyAPIKey using the keyId passed in the Signature header as the
   client_id. Upon success, it retrieves metadata attached to the
   developer app and uses it for verifying the signature.  For HMAC
@@ -86,8 +87,11 @@ Notes:
   the secret key.  For RSA algorithms, the proxy uses the custom
   attribute named "public_key".
 
+2. You need to create a cache called "cache1" in your environment before
+deploying this api proxy.
 
-Bugs:
+
+** Bugs:
 
   This proxy does not implement the WWW-Authenticate response with a
     configurable set of headers to sign.

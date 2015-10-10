@@ -3,5 +3,5 @@
     <Property name='varprefix'>parse</Property>
   </Properties>
   <ClassName>com.dinochiesa.httpsignature.SignatureParserCallout</ClassName>
-  <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
+  <ResourceURL>java://httpsig-edge-callout.jar</ResourceURL>
 </JavaCallout>
