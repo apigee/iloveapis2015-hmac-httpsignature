@@ -6,6 +6,6 @@
     <!--  <Property name='secret-key'>{whatever}</Property> -->
     <Property name='headers'>date (request-target)</Property>
   </Properties>
-  <ClassName>com.dinochiesa.httpsignature.SignatureVerifierCallout</ClassName>
+  <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
   <ResourceURL>java://httpsig-edge-callout.jar</ResourceURL>
 </JavaCallout>

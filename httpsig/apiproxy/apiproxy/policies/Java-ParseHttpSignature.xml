@@ -2,6 +2,6 @@
   <Properties>
     <Property name='varprefix'>parse</Property>
   </Properties>
-  <ClassName>com.dinochiesa.httpsignature.SignatureParserCallout</ClassName>
+  <ClassName>com.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
   <ResourceURL>java://httpsig-edge-callout.jar</ResourceURL>
 </JavaCallout>

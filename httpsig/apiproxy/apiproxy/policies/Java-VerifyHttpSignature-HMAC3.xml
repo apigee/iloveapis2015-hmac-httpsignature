@@ -5,6 +5,6 @@
     <Property name='secret-key'>{verifyapikey.VerifyApiKey-1.client_secret}</Property>
     <Property name='headers'>date (request-target) nonce</Property>
   </Properties>
-  <ClassName>com.dinochiesa.httpsignature.SignatureVerifierCallout</ClassName>
+  <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
   <ResourceURL>java://httpsig-edge-callout.jar</ResourceURL>
 </JavaCallout>
