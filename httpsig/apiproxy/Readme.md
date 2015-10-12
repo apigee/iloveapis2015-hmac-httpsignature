@@ -29,17 +29,24 @@ The actual signature is computed over a signing base which consists of a concate
 
 In the list of headers, the value of (request-target) is treated specially: it implies a string containing the (lowercased) request method and the URL path+query, separated by a space. Therefore for the above authorization header, the signing base might be: 
 
+```
 (request-target): get /happy?when=now\ndate: Fri, 17 Jul 2015 17:55:56 GMT
-
+```
 Making a signed request from curl might look like this: 
 
+```
 curl -i -X GET \
   -H "Date:  Fri, 17 Jul 2015 17:55:56 GMT" \
-  -H 'Signature: keyId="Test",algorithm="hmac-sha256",headers="(request-target) date",signature="udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI="'  \
+  -H 'Signature: keyId="Test",
+          algorithm="hmac-sha256",
+          headers="(request-target) date",
+          signature="udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI="'  \
   https://deecee-test.apigee.net/httpsig/t1
+```
 
+(again, line feeds have been added to the Signature header shown above for readability. In actuality, a signature will be a single line with no intervening whitepace after the commas)
 
-(But the tricky part is computing the value of the signature)
+This looks simple, and it is. The only tricky part is computing the value of the signature.
 
 The server of such a request can verify the signature and reject a request for which the signature is invalid.  This provides a way for the server to authenticate the client, and verify the integrity of the request. 
 
