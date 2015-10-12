@@ -3,8 +3,7 @@ httpsig
 
 This API proxy verifies an HTTP Signature.  It is a loopback proxy; it always returns 200.  It provides a message payload that indicates an error if the signature is invalid, or no error if the signature is valid. 
 
-The proposed standard for the HTTP Signature is here: 
-http://tools.ietf.org/html/draft-cavage-http-signatures-04
+The proposed standard for the HTTP Signature is [here](http://tools.ietf.org/html/draft-cavage-http-signatures-05).
 
 Here's a summary of the spec: 
 
@@ -17,7 +16,9 @@ The client sends in a Signature header that contains:
 Each element is formed as key="value" and they are separated by commas. This must be passed in an HTTP header named "Signature".
 The resulting header might look like this: 
 
+```
 Signature: keyId="Test",algorithm="hmac-sha256",headers="(request-target) date",signature="udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI="
+```
 
 The actual signature is computed over a signing base which consists of a concatenation of lines, separated by a newline character. Each line is a lowercased header name, a colon, a space, and the header value. The order of the headers in the signing base is as specified in the list. 
 

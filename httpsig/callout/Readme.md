@@ -4,8 +4,8 @@ This directory contains the Java source code and Java jars required to
 compile a Java callout for Apigee Edge that does Verification of HTTP
 Signatures, either RSA or HMAC.
 
-HTTP Signature is a draft specification for an IETF standard
-http://tools.ietf.org/html/draft-cavage-http-signatures-04 . 
+HTTP Signature is a [draft specification for an IETF standard](http://tools.ietf.org/html/draft-cavage-http-signatures-05).
+
 
 It describes how to generate and verify signatures on HTTP requests. 
 
