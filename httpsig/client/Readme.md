@@ -18,11 +18,11 @@ Should also work on Windows clients, or Linux machines.
 
 1. unpack the zip archive
 
-2. open a terminal window or command prompt and: 
+2. open a terminal window or command prompt, to where you have unpacked and install the dependencies for the nodejs client app.  To do so, run this command: 
 
     ```npm install```
 
-3. in the same terminal window,
+3. in the same terminal window, invoke the client app:
     ```node ./httpSigClient.js```
 
    This will display help.
