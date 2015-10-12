@@ -25,7 +25,7 @@ signature="udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI="
 
 (line feeds have been added to the above for readability. In actuality, a signature will be a single line with no intervening whitepace after the commas)
 
-The actual signature is computed over a signing base which consists of a concatenation of lines, separated by a newline character. Each line is a lowercased header name, a colon, a space, and the header value. The order of the headers in the signing base is as specified in the list. 
+The actual signature is computed over a signing base which consists of a concatenation of lines, separated by a newline character. Each line is a lowercased header name, a colon, a space, and the header value. The order of the headers in the signing base is as specified in the list. The signing base is not transmitted to the server as part of the request. 
 
 In the list of headers, the value of (request-target) is treated specially: it implies a string containing the (lowercased) request method and the URL path+query, separated by a space. Therefore for the above authorization header, the signing base might be: 
 
