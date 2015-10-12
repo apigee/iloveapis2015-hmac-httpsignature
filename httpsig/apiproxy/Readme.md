@@ -83,7 +83,6 @@ that depends on the node http-signature modile.  httpSigClient.js
 * /rsa-t4
 * /rsa-t5
 * /rsa-t6
-
 * /hmac-t1
 * /hmac-t2
 * /hmac-t3
@@ -103,7 +102,7 @@ You will invoke each resource with a request like:
 But, to send the requests, you need to compute an http signature header. To aid in doing so, use the client application in the [client sibling directory](../client) here. 
 
 
-** Notes:
+## Notes:
 
 There is some setup required before you can use this API proxy. 
 
@@ -129,9 +128,9 @@ directory) will do so.  You can also write your own client using any
 other language.
 
 
-** Bugs:
+## Bugs:
 
-  This proxy does not implement the WWW-Authenticate response with a
-    configurable set of headers to sign.
+* This proxy does not implement the WWW-Authenticate response with a
+  configurable set of headers to sign.
 
 
