@@ -75,19 +75,32 @@ the spec.  There's a companion client for this proxy written in nodejs
 that depends on the node http-signature modile.  httpSigClient.js
 
 
-** Resources: 
+## Resources: 
 
-  /rsa-t1
-  /rsa-t2
-  /rsa-t3
-  /rsa-t4
-  /rsa-t5
-  /rsa-t6
+* /rsa-t1
+* /rsa-t2
+* /rsa-t3
+* /rsa-t4
+* /rsa-t5
+* /rsa-t6
 
-  /hmac-t1
-  /hmac-t2
-  /hmac-t3
-  /hmac-t4
+* /hmac-t1
+* /hmac-t2
+* /hmac-t3
+* /hmac-t4
+
+You will invoke each resource with a request like: 
+
+```
+  GET /httpsig/rsa-t1
+  GET /httpsig/rsa-t2
+   ...
+  GET /httpsig/hmac-t1
+   ...
+
+```
+
+But, to send the requests, you need to compute an http signature header. To aid in doing so, use the client application in the [client sibling directory](../client) here. 
 
 
 ** Notes:
