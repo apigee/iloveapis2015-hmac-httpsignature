@@ -36,7 +36,7 @@ Should also work on Windows clients, or Linux machines.
      -a hmac-sha256 \
      -k qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm \
      -s ndEBookG4W2xAa8M  \
-     -o sbuxeval1  -t hmac-t1 
+     -o evalorg1  -t hmac-t1 
 
 (That command should run all on one line)
 
@@ -73,17 +73,19 @@ Note the isValid indicates "true".
 
 Note: the -k and -s here are consumer ID and consumer secret, respectively.  The example API proxy provided with this client retrieves the secret key (consumer secret) based on the keyId. 
 
-There are these paths available in the Apigee Edge example proxy provided with this client: 
-  rsa-t1
-  rsa-t2
-  rsa-t3
-  rsa-t4
-  rsa-t5
-  rsa-t6
-  hmac-t1
-  hmac-t2
-  hmac-t3
-  hmac-t4
+There are these paths available in the Apigee Edge example proxy provided with this client:
+
+* rsa-t1
+* rsa-t2
+* rsa-t3
+* rsa-t4
+* rsa-t5
+* rsa-t6
+* hmac-t1
+* hmac-t2
+* hmac-t3
+* hmac-t4
+
 
 ### Example 2: create an HMAC signature, and use "the wrong" algorithm
 
@@ -91,7 +93,7 @@ There are these paths available in the Apigee Edge example proxy provided with t
      -a hmac-sha1 \
      -k qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm \
      -s ndEBookG4W2xAa8M  \
-     -o sbuxeval1  -t hmac-t1 
+     -o evalorg1  -t hmac-t1 
 
 Same as above, but the client uses hmac-sha1.  The hmac-t1 path on the example API proxy REQUIRES hmac-sha256, therefore, the request is successfully sent by the client, but the proxy rejects the signature as it does not use the required algorithm .
 
@@ -122,7 +124,7 @@ Note: isValid is false.
      -a hmac-sha256 \
      -k qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm \
      -s ndEBookG4W2xAa8M  \
-     -o sbuxeval1  -t hmac-t2
+     -o evalorg1  -t hmac-t2
 
 
 The client sends the request to path /hmac-t2.  For this path, the HttpSignatureVerifier callout in the Apigee Edge proxy is purposefully configured incorrectly.  This demonstrates the behavior when incorrect configuration is used in the proxy.  
@@ -157,7 +159,7 @@ You should see a response like this:
      -k qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm \
      -s ndEBookG4W2xAa8M  \
      -H app-specific-header:anything \
-     -o sbuxeval1  -t hmac-t4
+     -o evalorg1  -t hmac-t4
 
 
 The flow at /hmac-t4 in the Edge proxy invokes a policy that requires that the HTTP Signature be computed on 3 headers: date (request-target) and app-specific-header. The client sets and signs the header named app-specific-header, and transmits that signature. Apigee Edge verifies this, and this request will succeed (return isValid = true).  Note: the signature verifier does not verify a "valid" value for app-specific-header. It only verifies that the signature is valid for a set of headers including app-sepcific-header. It's up to the app logic to determine whether the value of the signed header is valid. 
@@ -171,11 +173,20 @@ The flow at /hmac-t4 in the Edge proxy invokes a policy that requires that the H
      -k qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm \
      -s ndEBookG4W2xAa8M  \
      -H other-header:anything \
-     -o sbuxeval1  -t hmac-t4
+     -o evalorg1  -t hmac-t4
 
 
 The flow at /hmac-t4 in the Edge proxy invokes a policy that requires that the HTTP Signature be computed on 3 headers: date (request-target) and app-specific-header. This client does not set and sign 'app-specific-header', but rather, sets and signs 'other-header'. The resulting signature will not be accepted by the policy at Apigee Edge. 
 
+You will see a result like this:
+
+```
+==> 500
+body: 
+{
+  "error" : "signature is missing required header (app-specific-header)."
+}
+```
 
 
 ### Example 6: create and send an RSA signature
@@ -184,7 +195,7 @@ The flow at /hmac-t4 in the Edge proxy invokes a policy that requires that the H
      -a rsa-sha256 \
      -k qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm \
      -p keys/key2-private.pem  \
-     -o sbuxeval1  -t rsa-t4 
+     -o evalorg1  -t rsa-t4 
 
 This one tells the lient to use RSA-sha256, with the private key as specified with the -p option. It sends the request to the /rsa-t4 path on the example API Proxy. The Verifier policy in Apigee Edge looks for an RSA signature with SHA of any key strength. This will succeed with a message like so: 
 
@@ -214,73 +225,80 @@ This one tells the lient to use RSA-sha256, with the private key as specified wi
      -a rsa-sha256 \
      -k qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm \
      -p keys/key2-private.pem  \
-     -o sbuxeval1  -t rsa-t5
+     -o evalorg1  -t rsa-t5
 
 This one tells the client to use RSA-sha256, with the private key as specified with the -p option. It sends the request to the /rsa-t5 path on the example API Proxy.  
 
 The Verification policy attached to the rsa-t5 path checks for RSA-sha1.  The verification will then fail, with a message like so: 
 
-    {
-      "app.name" : "HttpSigApp",
-      "apiproduct.name" : "HttpSigProduct",
-      "signature" : {
-        "keyId" : "qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm",
-        "algorithm" : "rsa-sha256",
-        "headers" : "(request-target) date user-agent"
-      },
-      "verification": {
-        "isValid" : "false",
-        "requiredAlgorithm" : "rsa-sha1",
-        "requiredHeaders" : "",
-        "timeskew" : "",
-        "signingBase" : "",
-        "computedSignature" : "",
-        "error" : "algorithm used in signature (rsa-sha256) is not as required (rsa-sha1)"
-      }
-    }
+```
+{
+  "app.name" : "HttpSigApp",
+  "apiproduct.name" : "HttpSigProduct",
+  "signature" : {
+    "keyId" : "qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm",
+    "algorithm" : "rsa-sha256",
+    "headers" : "(request-target) date user-agent"
+  },
+  "verification": {
+    "isValid" : "false",
+    "requiredAlgorithm" : "rsa-sha1",
+    "requiredHeaders" : "",
+    "timeskew" : "",
+    "signingBase" : "",
+    "computedSignature" : "",
+    "error" : "algorithm used in signature (rsa-sha256) is not as required (rsa-sha1)"
+  }
+}
+```
 
-
+Notice  that the "isValid" field is false in this response. 
 
 
 ### Example 8: create and send an RSA signature using rsa-sha1
 
-    node ./httpSigClient.js \
-     -a rsa-sha1 \
-     -k qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm \
-     -p keys/key2-private.pem  \
-     -o sbuxeval1  -t rsa-t5
+```
+node ./httpSigClient.js \
+  -a rsa-sha1 \
+  -k qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm \
+  -p keys/key2-private.pem  \
+  -o evalorg1  -t rsa-t5
+```
 
 This is like Example 5, but the client uses rsa-sha1. 
 
 The Verification policy attached to the rsa-t5 path checks for RSA-sha1.  The verification will then succeed, with a message like so: 
 
-    {
-      "app.name" : "HttpSigApp",
-      "apiproduct.name" : "HttpSigProduct",
-      "signature" : {
-        "keyId" : "qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm",
-        "algorithm" : "rsa-sha1",
-        "headers" : "(request-target) date user-agent"
-      },
-      "verification": {
-        "isValid" : "true",
-        "requiredAlgorithm" : "rsa-sha1",
-        "requiredHeaders" : "date (request-target)",
-        "timeskew" : "1",
-        "signingBase" : "(request-target): get /httpsig/rsa-t5?how=areyou|date: Thu, 20 Aug 2015 17:43:20 GMT|user-agent: nodejs httpSigClient.js",
-        "computedSignature" : "",
-        "error" : ""
-      }
-    }
-
+```
+{
+  "app.name" : "HttpSigApp",
+  "apiproduct.name" : "HttpSigProduct",
+  "signature" : {
+    "keyId" : "qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm",
+    "algorithm" : "rsa-sha1",
+    "headers" : "(request-target) date user-agent"
+  },
+  "verification": {
+    "isValid" : "true",
+    "requiredAlgorithm" : "rsa-sha1",
+    "requiredHeaders" : "date (request-target)",
+    "timeskew" : "1",
+    "signingBase" : "(request-target): get /httpsig/rsa-t5?how=areyou|date: Thu, 20 Aug 2015 17:43:20 GMT|user-agent: nodejs httpSigClient.js",
+    "computedSignature" : "",
+    "error" : ""
+  }
+}
+```
 
 ### Example 9: RSA, test missing header
 
-    node ./httpSigClient.js \
-     -a rsa-sha256 \
-     -k qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm \
-     -p keys/key2-private.pem  \
-     -o sbuxeval1  -t rsa-t3
+```
+node ./httpSigClient.js \
+ -a rsa-sha256 \
+ -k qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm \
+ -p keys/key2-private.pem  \
+ -o evalorg1  -t rsa-t3
+```
 
 This one tells the lient to use RSA-sha256, with the private key as specified with the -p option. It sends the request to the /rsa-t3 path on the example API Proxy.  
 
@@ -288,35 +306,38 @@ The Verify policy attached to the rsa-t3 flow checks for the presence of the non
 
 You will see a message like so: 
 
-    {
-      "app.name" : "HttpSigApp",
-      "apiproduct.name" : "HttpSigProduct",
-      "signature" : {
-        "keyId" : "qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm",
-        "algorithm" : "rsa-sha256",
-        "headers" : "(request-target) date user-agent"
-      },
-      "verification": {
-        "isValid" : "false",
-        "requiredAlgorithm" : "",
-        "requiredHeaders" : "date (request-target) nonce",
-        "timeskew" : "",
-        "signingBase" : "",
-        "computedSignature" : "",
-        "error" : "signature is missing required header (nonce)."
-      }
-    }
-
+```json
+{
+  "app.name" : "HttpSigApp",
+  "apiproduct.name" : "HttpSigProduct",
+  "signature" : {
+    "keyId" : "qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm",
+    "algorithm" : "rsa-sha256",
+    "headers" : "(request-target) date user-agent"
+  },
+  "verification": {
+    "isValid" : "false",
+    "requiredAlgorithm" : "",
+    "requiredHeaders" : "date (request-target) nonce",
+    "timeskew" : "",
+    "signingBase" : "",
+    "computedSignature" : "",
+    "error" : "signature is missing required header (nonce)."
+  }
+}
+```
 
 
 ### Example 10: send the nonce header
 
-    node ./httpSigClient.js \
-     -a rsa-sha256 \
-     -n 12345 \
-     -k qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm \
-     -p keys/key2-private.pem  \
-     -o sbuxeval1  -t rsa-t3
+```
+node ./httpSigClient.js \
+   -a rsa-sha256 \
+   -n 12345 \
+   -k qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm \
+   -p keys/key2-private.pem  \
+   -o evalorg1  -t rsa-t3
+```
 
 This one is like Example 7,  but the client actually sends the required nonce header and includes that header in the signature. 
 
@@ -324,21 +345,23 @@ The Verify policy attached to the rsa-t3 flow checks for the presence of the non
 
 You will see a message like so: 
 
-    {
-      "app.name" : "HttpSigApp",
-      "apiproduct.name" : "HttpSigProduct",
-      "signature" : {
-        "keyId" : "qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm",
-        "algorithm" : "rsa-sha256",
-        "headers" : "(request-target) date user-agent nonce"
-      },
-      "verification": {
-        "isValid" : "true",
-        "requiredAlgorithm" : "",
-        "requiredHeaders" : "date (request-target) nonce",
-        "timeskew" : "0",
-        "signingBase" : "(request-target): get /httpsig/rsa-t3?how=areyou|date: Thu, 20 Aug 2015 17:47:57 GMT|user-agent: nodejs httpSigClient.js|nonce: 12345",
-        "computedSignature" : "",
-        "error" : ""
-      }
-    }
+```json
+{
+  "app.name" : "HttpSigApp",
+  "apiproduct.name" : "HttpSigProduct",
+  "signature" : {
+    "keyId" : "qFodTGAsLjC5sz0gKCjYEnCdQwVytVRm",
+    "algorithm" : "rsa-sha256",
+    "headers" : "(request-target) date user-agent nonce"
+  },
+  "verification": {
+    "isValid" : "true",
+    "requiredAlgorithm" : "",
+    "requiredHeaders" : "date (request-target) nonce",
+    "timeskew" : "0",
+    "signingBase" : "(request-target): get /httpsig/rsa-t3?how=areyou|date: Thu, 20 Aug 2015 17:47:57 GMT|user-agent: nodejs httpSigClient.js|nonce: 12345",
+    "computedSignature" : "",
+    "error" : ""
+  }
+}
+```
