@@ -17,8 +17,13 @@ Each element is formed as key="value" and they are separated by commas. This mus
 The resulting header might look like this: 
 
 ```
-Signature: keyId="Test",algorithm="hmac-sha256",headers="(request-target) date",signature="udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI="
+Signature: keyId="Test",
+algorithm="hmac-sha256",
+headers="(request-target) date",
+signature="udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI="
 ```
+
+(line feeds have been added to the above for readability. In actuality, a signature will be a single line with no intervening whitepace after the commas)
 
 The actual signature is computed over a signing base which consists of a concatenation of lines, separated by a newline character. Each line is a lowercased header name, a colon, a space, and the header value. The order of the headers in the signing base is as specified in the list. 
 
