@@ -5,7 +5,7 @@
 // Signature that uses RSA signing, or HMAC signing.
 //
 // created: Mon Jul 20 11:11:32 2015
-// last saved: <2015-October-09 17:11:45>
+// last saved: <2015-October-12 14:56:23>
 
 var fs = require('fs');
 var http = require('http');
@@ -51,7 +51,7 @@ function responseHandler(res) {
 var requestOptions = {
   host: 'ORG-ENV.apigee.net',
   port: 80,
-  path: '/httpsig-java/PATH?how=areyou',
+  path: '/httpsig/PATH?how=areyou',
   method: 'GET',
   headers: {
     'User-Agent' : 'nodejs httpSigClient.js'

@@ -1,7 +1,7 @@
 <ProxyEndpoint name='default'>
   <Description>Default Proxy</Description>
   <HTTPProxyConnection>
-    <BasePath>/httpsig-java</BasePath>
+    <BasePath>/httpsig</BasePath>
     <Properties/>
     <VirtualHost>default</VirtualHost>
     <VirtualHost>secure</VirtualHost>

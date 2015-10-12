@@ -63,7 +63,7 @@ This command should succeed. You should see something like this as a response:
         "requiredAlgorithm" : "hmac-sha256",
         "requiredHeaders" : "date (request-target)",
         "timeskew" : "0",
-        "signingBase" : "(request-target): get /httpsig-java/hmac-t1?how=areyou|date: Thu, 20 Aug 2015 17:38:20 GMT|user-agent: nodejs httpSigClient.js",
+        "signingBase" : "(request-target): get /httpsig/hmac-t1?how=areyou|date: Thu, 20 Aug 2015 17:38:20 GMT|user-agent: nodejs httpSigClient.js",
         "computedSignature" : "9ABYB/HKXI/Ohzsxrem86dh4GNnp5VpXlEv7nozKE2I=",
         "error" : ""
       }
@@ -142,7 +142,7 @@ You should see a response like this:
         "requiredAlgorithm" : "hmac-sha256",
         "requiredHeaders" : "date (request-target)",
         "timeskew" : "1",
-        "signingBase" : "(request-target): get /httpsig-java/hmac-t2?how=areyou|date: Thu, 20 Aug 2015 17:31:58 GMT|user-agent: nodejs httpSigClient.js",
+        "signingBase" : "(request-target): get /httpsig/hmac-t2?how=areyou|date: Thu, 20 Aug 2015 17:31:58 GMT|user-agent: nodejs httpSigClient.js",
         "computedSignature" : "",
         "error" : "configuration error: secret-key is not specified or is empty."
       }
@@ -201,7 +201,7 @@ This one tells the lient to use RSA-sha256, with the private key as specified wi
         "requiredAlgorithm" : "rsa-sha256",
         "requiredHeaders" : "date (request-target)",
         "timeskew" : "0",
-        "signingBase" : "(request-target): get /httpsig-java/rsa-t4?how=areyou|date: Thu, 20 Aug 2015 17:40:11 GMT|user-agent: nodejs httpSigClient.js",
+        "signingBase" : "(request-target): get /httpsig/rsa-t4?how=areyou|date: Thu, 20 Aug 2015 17:40:11 GMT|user-agent: nodejs httpSigClient.js",
         "computedSignature" : "",
         "error" : ""
       }
@@ -267,7 +267,7 @@ The Verification policy attached to the rsa-t5 path checks for RSA-sha1.  The ve
         "requiredAlgorithm" : "rsa-sha1",
         "requiredHeaders" : "date (request-target)",
         "timeskew" : "1",
-        "signingBase" : "(request-target): get /httpsig-java/rsa-t5?how=areyou|date: Thu, 20 Aug 2015 17:43:20 GMT|user-agent: nodejs httpSigClient.js",
+        "signingBase" : "(request-target): get /httpsig/rsa-t5?how=areyou|date: Thu, 20 Aug 2015 17:43:20 GMT|user-agent: nodejs httpSigClient.js",
         "computedSignature" : "",
         "error" : ""
       }
@@ -337,7 +337,7 @@ You will see a message like so:
         "requiredAlgorithm" : "",
         "requiredHeaders" : "date (request-target) nonce",
         "timeskew" : "0",
-        "signingBase" : "(request-target): get /httpsig-java/rsa-t3?how=areyou|date: Thu, 20 Aug 2015 17:47:57 GMT|user-agent: nodejs httpSigClient.js|nonce: 12345",
+        "signingBase" : "(request-target): get /httpsig/rsa-t3?how=areyou|date: Thu, 20 Aug 2015 17:47:57 GMT|user-agent: nodejs httpSigClient.js|nonce: 12345",
         "computedSignature" : "",
         "error" : ""
       }
