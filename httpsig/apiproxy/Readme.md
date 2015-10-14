@@ -48,7 +48,10 @@ curl -i -X GET \
 
 This looks simple, and it is. The only tricky part is computing the value of the signature.
 
-The server of such a request can verify the signature and reject a request for which the signature is invalid.  This provides a way for the server to authenticate the client, and verify the integrity of the request. 
+The server of such a request can verify the signature and reject a
+request for which the signature is invalid.  This provides a way for the
+server to authenticate the client, and verify the integrity of the
+request.
 
 -----
 
@@ -71,8 +74,11 @@ the keyId to lookup the consumer secret, which it uses as the shared
 secret for encryption.
 
 To invoke the apiproxy, you need to compute the signature according to
-the spec.  There's a companion client for this proxy written in nodejs
-that depends on the node http-signature modile.  httpSigClient.js
+the spec.  There's a [companion client](../client)  for this proxy written in nodejs
+that depends on the node http-signature modile.
+
+
+To aid in doing so, use the client application in the 
 
 
 ## Resources: 
@@ -99,7 +105,8 @@ You will invoke each resource with a request like:
 
 ```
 
-But, to send the requests, you need to compute an http signature header. To aid in doing so, use the client application in the [client sibling directory](../client) here. 
+But, remember, to send the requests, you need to compute an http signature header. 
+To aid in doing so, use the client application in the [client sibling directory](../client) here. 
 
 
 ## Notes:
