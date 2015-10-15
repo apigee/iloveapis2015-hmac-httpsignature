@@ -24,8 +24,8 @@ This API Proxy demonstrates how you can do that.
 Generate an HMAC on a given payload using alg=sha-256, with key secret123: 
 
 ```
-    curl -i -X POST -d 'the quick brown fox...' \
-       "http://myorg-myenv.apigee.net/hmac/payload?alg=sha-256&key=secret123"
+curl -i -X POST -d 'the quick brown fox...' \
+   "http://myorg-myenv.apigee.net/hmac/payload?alg=sha-256&key=secret123"
 ```
 
 The response is plain text like this: 
@@ -38,6 +38,9 @@ javaized algorithm: HmacSHA256
 signature-hex: bf41d260dacd49be2d09e7c80f0cb5614bce8997c7a371994daafd606a6c4e2f
 signature-b64: v0HSYNrNSb4tCefIDwy1YUvOiZfHo3GZTar9YGpsTi8=
 ```
+
+Of course you can replace the payload with any value you like. You will see a different HMAC for each different payload value. 
+
 
 ### Validating
 
@@ -56,15 +59,19 @@ You will get a 400 error if the provided signature does not match what is calcul
 ### Generating HMAC on compound Strings
 
 
-This proxy also has an endpoint that will compute an HMAC on various headers and other values in the message. Invoke it like this:
+This proxy also has an endpoint that will compute an HMAC on the concatenation of various headers and other values in the message. Invoke it from curl like this:
 
 ```
-  curl -i -X POST -d '' \
+curl -i -X POST -d '' \
    -H "Date:`date -u +'%a, %d %b %Y %H:%M:%S GMT'`" \
    "http://myorg-myenv.apigee.net/hmac/headers?alg=sha-256&key=secret123"
 ```
 
-The incantation around the Date header just create an RFC-1123 compliant date value. The result of this call looks like this: 
+The incantation around the Date header just creates a date string that
+looks like "Wed, 07 Oct 2015 21:10:19 GMT", which is compliant with
+RFC-1123, and which is the format that browsers and other web clients
+use to send Date headers to servers.  The result of this call looks like
+this:
 
 ```
 key: secret123
