@@ -77,7 +77,7 @@ signature-hex: 2d9af1e471d593854627afef4b83332f59cccc4d0e21b1392f239324e480abd6
 signature-b64: LZrx5HHVk4VGJ6/vS4MzL1nMzE0OIbE5LyOTJOSAq9Y=
 
 ```
-
+For those of you who use POSTMAN, here is the link for you to download the HMAC collection - https://www.getpostman.com/collections/4b8e201e407a7e06fd7c
 
 ** Help
 
