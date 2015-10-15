@@ -1,5 +1,4 @@
-HMAC Example proxy
-========================
+# HMAC Example proxy
 
 This api proxy shows how to use a custom Java callout that calculates HMACs. 
 
@@ -17,11 +16,10 @@ any additional coding. Just drop the policy into your API proxy and go.
 This API Proxy demonstrates how you can do that. 
 
 
-Invoking
-========
+## Invoking
 
 
-** Generate an hmac on the request body
+### Generate an hmac on the request body
 
 Generate an HMAC on a given payload using alg=sha-256, with key secret123: 
 
@@ -41,7 +39,7 @@ signature-hex: bf41d260dacd49be2d09e7c80f0cb5614bce8997c7a371994daafd606a6c4e2f
 signature-b64: v0HSYNrNSb4tCefIDwy1YUvOiZfHo3GZTar9YGpsTi8=
 ```
 
-** Validating
+### Validating
 
 You can validate an hmac by specifying the hmac-base64 header and invoking a different url path, like this:
 
@@ -55,7 +53,7 @@ curl -i -X POST -d 'the quick brown fox...' \
 You will get a 400 error if the provided signature does not match what is calculated by the proxy. 
 
 
-** Generating HMAC on compound Strings
+### Generating HMAC on compound Strings
 
 
 This proxy also has an endpoint that will compute an HMAC on various headers and other values in the message. Invoke it like this:
@@ -77,9 +75,8 @@ signature-hex: 2d9af1e471d593854627afef4b83332f59cccc4d0e21b1392f239324e480abd6
 signature-b64: LZrx5HHVk4VGJ6/vS4MzL1nMzE0OIbE5LyOTJOSAq9Y=
 
 ```
-For those of you who use POSTMAN, here is the link for you to download the HMAC collection - https://www.getpostman.com/collections/4b8e201e407a7e06fd7c
 
-** Help
+### Help
 
 Finally, 
 you can get help on this demonstration API Proxy like this: 
@@ -87,6 +84,10 @@ you can get help on this demonstration API Proxy like this:
 ```
     curl -i -X GET  http://myorg-myenv.apigee.net/hmac
 ```
+
+### Postman
+
+For those of you who use [Google's free POSTMAN tool](https://www.getpostman.com/) for sending API requests, you can download a Postman collection for this proxy [here](https://www.getpostman.com/collections/4b8e201e407a7e06fd7c). 
 
 
 
