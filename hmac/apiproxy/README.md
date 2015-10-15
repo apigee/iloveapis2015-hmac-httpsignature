@@ -85,9 +85,19 @@ you can get help on this demonstration API Proxy like this:
     curl -i -X GET  http://myorg-myenv.apigee.net/hmac
 ```
 
-### Postman
+### Using Postman
 
 For those of you who use [Google's free POSTMAN tool](https://www.getpostman.com/) for sending API requests, you can download a Postman collection for this proxy [here](https://www.getpostman.com/collections/4b8e201e407a7e06fd7c). 
+
+To import this collection into Postman, first install and run the Postman tool.
+
+Then, Click the button to import a collection.
+
+![import-1](../images/postman-import-screenshot-1.png "Import a Collection 1")
+
+Then, specify the URL location (https://www.getpostman.com/collections/4b8e201e407a7e06fd7c) 
+
+![import-2](../images/postman-import-screenshot-2.png "Import a Collection 2")
 
 
 
