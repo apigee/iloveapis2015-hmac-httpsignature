@@ -1,10 +1,9 @@
-## HMAC Callout
+# HMAC Callout
 
 This directory contains the Java source code and Java jars required to
 compile a Java callout for Apigee Edge that does HMAC generation.
 
-Building The Code
-----------------
+## Building The Code
 
 1. unpack (if you can read this, you've already done that).
 
@@ -29,8 +28,7 @@ Building The Code
 
 
 
-Dependencies
-------------------
+## Dependencies
 
 - Apigee Edge expressions v1.0
 - Apigee Edge message-flow v1.0
@@ -53,8 +51,8 @@ If you want to download them manually:
   Apigee Edge currently uses.
   http://commons.apache.org/proper/commons-codec/
 
-Notes:
---------
+
+## Usage Notes
 
 There is a single class - HmacCreatorCallout - which calculates an HMAC on a payload.
 
@@ -77,9 +75,9 @@ Configure it like so:
 ```
 
 NB: valid algorithm arguments are: 
-  sha-1, sha1, sha-224, sha224, sha-256, sha256, sha-384, sha-256
+  sha-1, sha1, sha-224, sha224, sha-256, sha256, sha-384, sha-256, md5, md-5
 
-The algorithm can be specified in any case. 
+The algorithm can be specified in upper, lower, or mixed case. 
 
 
 The callout emits these variables into the message context:
@@ -117,7 +115,7 @@ several variables and static strings, like this:
 In this case, the policy will resolve each of the variables surrounded by curlies and assign the resulting concatenation to string-to-sign. 
 
 
-**Validating** 
+## Validating Hmac
 
 You can configure the policy to validate an hmac as well, by including the property named "hmac-base64" in the configuration. Like this:
 
@@ -148,3 +146,14 @@ provided hmac.  In fault rules, you can test hmac.error :
     </FaultRule>
   </FaultRules>
 ```
+
+
+## Unit tests
+
+To run the unit tests, use maven:
+
+``` 
+mvn clean test
+```
+
+
