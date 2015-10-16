@@ -19,11 +19,11 @@ import com.apigee.testng.support.NotImplementedException;
 
 import com.apigee.callout.hmac.HmacCreatorCallout;
 
+
 public class TestHmacEdgeCallout {
 
     MessageContext msgCtxt;
     ExecutionContext exeCtxt;
-
 
     @BeforeTest()
     public void testSetup1() {
