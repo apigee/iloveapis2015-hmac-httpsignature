@@ -167,11 +167,10 @@ public class HmacCreatorCallout implements Execution {
                 msgCtxt.setVariable("hmac.key", signingKey);
             }
             msgCtxt.setVariable("hmac.string-to-sign", stringToSign);
-            msgCtxt.setVariable("hmac.alg", algorithm);
             msgCtxt.setVariable("hmac.signature.hex", sigHex);
             msgCtxt.setVariable("hmac.signature.b64", sigB64);
 
-            // presence of hmac property indicates verification wanted
+            // presence of hmac-base64 property indicates verification wanted
             String expectedHmac = getHmac(msgCtxt);
             if (expectedHmac !=null) {
                 if (!sigB64.equals(expectedHmac)) {

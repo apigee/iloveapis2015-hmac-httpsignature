@@ -98,7 +98,7 @@ public class TestHmacEdgeCallout {
         // run it
         ExecutionResult result = new HmacCreatorCallout(m).execute(msgCtxt, exeCtxt);
 
-        // retrieve results
+        // retrieve output
         String alg = msgCtxt.getVariable("hmac.javaizedAlg");
         //System.out.println("algorithm: " + alg);
         String error = msgCtxt.getVariable("hmac.error");
@@ -166,6 +166,44 @@ public class TestHmacEdgeCallout {
         Assert.assertEquals(error, null);
         Assert.assertEquals(alg, "HmacMD5");
         Assert.assertEquals(hex.toLowerCase(), "1fcd2cdb3005f4d9baef9f3957cd2d1f");
+    }
+
+    @Test()
+    public void VerifyHmac1() {
+        Map m = new HashMap();
+        m.put("string-to-sign", "The quick brown fox...");
+        m.put("key", "secret123");
+        m.put("algorithm", "SHA-256");
+        m.put("hmac-base64", "5tC369Qn1HqQ0IbiCpU6DOwHPDTMdFI/SuIAXrIdjj0=");
+        m.put("debug", "true");
+
+        ExecutionResult result = new HmacCreatorCallout(m).execute(msgCtxt, exeCtxt);
+
+        // retrieve output
+        String error = msgCtxt.getVariable("hmac.error");
+
+        // check result and output
+        Assert.assertEquals(result, ExecutionResult.SUCCESS);
+        Assert.assertEquals(error, null);
+    }
+
+    @Test()
+    public void VerifyHmacFailure1() {
+        Map m = new HashMap();
+        m.put("string-to-sign", "The quick brown fox..!");
+        m.put("key", "secret123");
+        m.put("algorithm", "SHA-256");
+        m.put("hmac-base64", "5tC369Qn1HqQ0IbiCpU6DOwHPDTMdFI/SuIAXrIdjj0=");
+        m.put("debug", "true");
+
+        ExecutionResult result = new HmacCreatorCallout(m).execute(msgCtxt, exeCtxt);
+
+        // retrieve output
+        String error = msgCtxt.getVariable("hmac.error");
+
+        // check result and output
+        Assert.assertEquals(result, ExecutionResult.ABORT);
+        Assert.assertEquals(error, "HMAC does not verify");
     }
 
 
