@@ -27,7 +27,9 @@ import com.apigee.callout.hmac.TemplateString;
 public class HmacCreatorCallout implements Execution {
     private static final String defaultAlgorithm = "SHA-256";
     private static final String TRUE = "true";
-    private static Pattern algPattern = Pattern.compile("^(SHA)-?(1|224|256|384|512)$", Pattern.CASE_INSENSITIVE);
+    //private static Pattern algPattern = Pattern.compile("^(?:(SHA)-?(1|224|256|384|512))|(?:(MD)-?(5))$", Pattern.CASE_INSENSITIVE);
+    private static Pattern algMd5Pattern = Pattern.compile("^(MD)-?(5)$", Pattern.CASE_INSENSITIVE);
+    private static Pattern algShaPattern = Pattern.compile("^(SHA)-?(1|224|256|384|512)$", Pattern.CASE_INSENSITIVE);
 
     private Map properties; // read-only
 
@@ -117,18 +119,32 @@ public class HmacCreatorCallout implements Execution {
 
     private static String javaizeAlgorithmName(MessageContext msgCtxt,String alg)
         throws IllegalStateException {
-        Matcher m = algPattern.matcher(alg);
+        Matcher m = algShaPattern.matcher(alg);
         if (!m.matches()) {
-            throw new IllegalStateException("the algorithm name (" + alg + ") is not recognized");
+            m = algMd5Pattern.matcher(alg);
+            if (!m.matches()) {
+                throw new IllegalStateException("the algorithm name (" + alg + ") is not recognized");
+            }
         }
 
-        String stdName =  m.group(1).toUpperCase() + m.group(2);
+        String stdName = m.group(1).toUpperCase() + m.group(2);
         return "Hmac" + stdName;
+    }
+
+    private void clearVariables(MessageContext msgCtxt) {
+        msgCtxt.removeVariable("hmac.error");
+        msgCtxt.removeVariable("hmac.stacktrace");
+        msgCtxt.removeVariable("hmac.javaizedAlg");
+        msgCtxt.removeVariable("hmac.alg");
+        msgCtxt.removeVariable("hmac.string-to-sign");
+        msgCtxt.removeVariable("hmac.signature.hex");
+        msgCtxt.removeVariable("hmac.signature.b64");
     }
 
     public ExecutionResult execute(MessageContext msgCtxt,
                                    ExecutionContext exeCtxt) {
         try {
+            clearVariables(msgCtxt);
             String signingKey = getKey(msgCtxt);
             String stringToSign = getStringToSign(msgCtxt);
             String algorithm = getAlgorithm(msgCtxt);
