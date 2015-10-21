@@ -6,7 +6,7 @@
 # A bash script for provisioning an API Product and a developer app on
 # an organization in the Apigee Edge Gateway.
 #
-# Last saved: <2015-October-21 14:38:49>
+# Last saved: <2015-October-21 14:50:26>
 #
 
 verbosity=2
@@ -25,6 +25,7 @@ function usage() {
   echo "$CMD: "
   echo "  Creates an API Product for the httpsig proxy, and a developer app"
   echo "  that is enabled for that product. Emits the client id and secret."
+  echo "  Also creates a named cache, or verifies that it exists."
   echo "  Uses the curl utility."
   echo "usage: "
   echo "  $CMD [options] "
@@ -319,75 +320,74 @@ function verify_public_key() {
 
 function maybe_create_cache() {
   local wantedcache="$1"
-  local existingcache
-  local ttl c exists
+  local existingcache ttl c exists
 
   echo "check for existing caches..."
-  MYCURL -X GET ${mgmtbase}/v1/o/${org}/e/${env}/caches/
+  MYCURL -X GET ${mgmtserver}/v1/o/${orgname}/e/${envname}/caches/
   if [ ${CURL_RC} -ne 200 ]; then
     echo 
     echoerror "Cannot retrieve caches for that environment..."
     echoerror
-    Cleanup
+    CleanUp
     exit 1
   fi
 
   c=`cat ${CURL_OUT} | grep "\[" | sed -E 's/[]",[]//g'`
   IFS=' '; declare -a cachearray=($c)
-  
-    # trim spaces
-    wantedcache="$(echo "${wantedcache}" | tr -d '[[:space:]]')"
-    exists=0
-    for i in "${!cachearray[@]}"
-    do
-      existingcache="${cachearray[i]}"
-      echo "found cache: ${existingcache}"
-      if [[ "$wantedcache" = "$existingcache" ]] ; then
-        exists=1
-      fi
-    done
 
-    if [ $exists -eq 0 ]; then 
-      echo "creating the cache \"$wantedcache\"..."
-      MYCURL -X POST \
-        -H "Content-type:application/json" \
-        "${mgmtbase}/v1/o/${org}/e/${env}/caches?name=$wantedcache" \
-        -d '{
-          "compression": {
-            "minimumSizeInKB": 1024
-          },
-          "distributed" : true,
-          "description": "cache supporting nonce mgmt in the HttpSig proxy",
-          "diskSizeInMB": 0,
-          "expirySettings": {
-            "timeoutInSec" : {
-              "value" : 86400
-            },
-            "valuesNull": false
-          },
-          "inMemorySizeInKB": 8000,
-          "maxElementsInMemory": 3000000,
-          "maxElementsOnDisk": 1000,
-          "overflowToDisk": false,
-          "persistent": false,
-          "skipCacheIfElementSizeInKBExceeds": "12"
-        }'
-      if [ ${CURL_RC} -eq 409 ]; then
-        ## should have caught this above, but just in case
-        echo
-        echo "That cache already exists."
-      elif [ ${CURL_RC} -ne 201 ]; then
-        echo
-        echoerror "failed creating the cache."
-        cat ${CURL_OUT}
-        echo
-        CleanUp
-        echo
-        exit 1
-      fi
-    else
-      echo "the cache $wantedcache exists..."
+  # trim spaces
+  wantedcache="$(echo "${wantedcache}" | tr -d '[[:space:]]')"
+  exists=0
+  for i in "${!cachearray[@]}"
+  do
+    existingcache="${cachearray[i]}"
+    echo "found cache: ${existingcache}"
+    if [[ "$wantedcache" = "$existingcache" ]] ; then
+      exists=1
     fi
+  done
+
+  if [ $exists -eq 0 ]; then 
+    echo "creating the cache \"$wantedcache\"..."
+    MYCURL -X POST \
+      -H "Content-type:application/json" \
+      "${mgmtserver}/v1/o/${orgname}/e/${envname}/caches?name=$wantedcache" \
+      -d '{
+        "compression": {
+          "minimumSizeInKB": 1024
+        },
+        "distributed" : true,
+        "description": "cache supporting nonce mgmt in the HttpSig proxy",
+        "diskSizeInMB": 0,
+        "expirySettings": {
+          "timeoutInSec" : {
+            "value" : 86400
+          },
+          "valuesNull": false
+        },
+        "inMemorySizeInKB": 8000,
+        "maxElementsInMemory": 3000000,
+        "maxElementsOnDisk": 1000,
+        "overflowToDisk": false,
+        "persistent": false,
+        "skipCacheIfElementSizeInKBExceeds": "12"
+      }'
+    if [ ${CURL_RC} -eq 409 ]; then
+      ## should have caught this above, but just in case
+      echo
+      echo "That cache already exists."
+    elif [ ${CURL_RC} -ne 201 ]; then
+      echo
+      echoerror "failed creating the cache."
+      cat ${CURL_OUT}
+      echo
+      CleanUp
+      echo
+      exit 1
+    fi
+  else
+    echo "A-OK: the needed cache, $wantedcache, exists..."
+  fi
 
 }
 
@@ -615,7 +615,9 @@ function retrieve_app_keys() {
 echo
 echo "This script optionally deploys the ${apiname}.zip bundle, creates an API"
 echo "product, inserts the API proxy into the product, creates a developer and"
-echo "a developer app, gets the keys for that app. "
+echo "a developer app, gets the keys for that app. It also creates a named cache, "
+echo "or verifies that the required cache exists in Edge."
+
 echo "=============================================================================="
 
 while getopts "hm:o:e:u:ndrqv" opt; do
