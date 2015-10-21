@@ -7,7 +7,6 @@
       <Payload contentType='application/json'
                variablePrefix='%' variableSuffix='#'><![CDATA[{
   "error" : "re-used nonce."
-  }
 }
 ]]></Payload>
       <StatusCode>401</StatusCode>
