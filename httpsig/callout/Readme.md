@@ -6,8 +6,13 @@ Signatures, either RSA or HMAC.
 
 HTTP Signature is a [draft specification for an IETF standard](http://tools.ietf.org/html/draft-cavage-http-signatures-05).
 
-
 It describes how to generate and verify signatures on HTTP requests. 
+
+
+A signature looks like this: 
+
+Signature: keyId="mykey",algorithm="hmac-sha256",headers="(request-target) date",signature="udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI="
+
 
 
 Building the Code
@@ -209,7 +214,6 @@ The above configuration simply verifies that a signature is present. It does not
 ```xml
 <JavaCallout name='Java-VerifyHttpSignature4'>
   <Properties>
-    <Property name='varprefix'>sig</Property>
     <Property name='public-key'>{verifyapikey.VerifyApiKey-1.public_key}</Property>
     <Property name='headers'>date (request-target)</Property>
     <Property name='algorithm'>rsa-sha256</Property>
