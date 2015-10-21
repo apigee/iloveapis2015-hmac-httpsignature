@@ -33,12 +33,12 @@ Should also work on Windows clients, or Linux machines.
 ## Notes on configuring the API Product, etc
 
 The client here relies on the consumer secret to be the shared secret for computing HMACs.  Therefore, in order 
-to get this all to work, you will need the API Proxy to be created. See the [apiproxy sibling directory](../apiproxy) for how to do that.  You also need an API Product, which must contain the API Proxy.  And you also need a Developer app, with a client_id and client_secret (aka consumer id and consumer secret).  
+to get this all to work, you will need the API Proxy to be created. See the [apiproxy sibling directory](../apiproxy) for how to do that.  You also need an API Product, which must contain the API Proxy.  And you also need a Developer app, with a client_id and client_secret (aka consumer id and consumer secret).   And you need to create a cache, called cache1, in the environment to support the nonces.
 If you wish to use RSA encryption, then you will need to separately generate an RSA keypair, and you will 
 need to set the PEM-encoded public key as a custom attribute, called public_key, on the developer app. 
 
 
-Creating the API Product and the Developer and the Developer App in Apigee Edge is typically a manual step.  Likewise setting a custom attribute on a developer app. You can do all of this using the Publish section of the administrative UI.  
+Creating the API Product and the Developer and the Developer App in Apigee Edge is typically a manual step.  Likewise setting a custom attribute on a developer app, and creating a cache. You can do all of this using the Publish section of the administrative UI.  
 
 However, this directory contains a provisioning script that can do it for you automatically. 
 
@@ -139,28 +139,14 @@ There are these paths available in the Apigee Edge example proxy provided with t
      -s CONSUMER_SECRET_HERE  \
      -o ORG_NAME_HERE  -t hmac-t1 
 
-Same as above, but the client uses hmac-sha1.  The hmac-t1 path on the example API proxy REQUIRES hmac-sha256, therefore, the request is successfully sent by the client, but the proxy rejects the signature as it does not use the required algorithm .
+Same as above, but the client uses hmac-sha1.  The hmac-t1 path on the example API proxy REQUIRES hmac-sha256, therefore, the request is successfully sent by the client, but the proxy rejects the signature as it does not use the required algorithm . The response: 
 
-    {
-      "app.name" : "HttpSigApp",
-      "apiproduct.name" : "HttpSigProduct",
-      "signature" : {
-        "keyId" : "CONSUMER_KEY_HERE",
-        "algorithm" : "hmac-sha1",
-        "headers" : "(request-target) date user-agent"
-      },
-      "verification": {
-        "isValid" : "false",
-        "requiredAlgorithm" : "hmac-sha256",
-        "requiredHeaders" : "",
-        "timeskew" : "",
-        "signingBase" : "",
-        "computedSignature" : "",
-        "error" : "algorithm used in signature (hmac-sha1) is not as required (hmac-sha256)"
-      }
-    }
+```
+{
+  "error" : "algorithm used in signature (hmac-sha1) is not as required (hmac-sha256)"
+}
+```
 
-Note: isValid is false.
 
 ### Example 3: create an HMAC signature, but trigger proxy-side config error
 
@@ -174,29 +160,12 @@ Note: isValid is false.
 The client sends the request to path /hmac-t2.  For this path, the HttpSignatureVerifier callout in the Apigee Edge proxy is purposefully configured incorrectly.  This demonstrates the behavior when incorrect configuration is used in the proxy.  
 
 You should see a response like this: 
+```
+{
+  "error" : "configuration error: secret-key is not specified or is empty."
+}
+```
 
-    {
-      "app.name" : "HttpSigApp",
-      "apiproduct.name" : "HttpSigProduct",
-      "signature" : {
-        "keyId" : "CONSUMER_KEY_HERE",
-        "algorithm" : "hmac-sha256",
-        "headers" : "(request-target) date user-agent"
-      },
-      "verification": {
-        "isValid" : "false",
-        "requiredAlgorithm" : "hmac-sha256",
-        "requiredHeaders" : "date (request-target)",
-        "timeskew" : "1",
-        "signingBase" : "(request-target): get /httpsig/hmac-t2?how=areyou|date: Thu, 20 Aug 2015 17:31:58 GMT|user-agent: nodejs httpSigClient.js",
-        "computedSignature" : "",
-        "error" : "configuration error: secret-key is not specified or is empty."
-      }
-    }
-
-
-
-Note the isValid property indicates "false" here. Also the "error" property indicates the reason for the error. 
 
 The Java source code is currently configured to NOT return a fault in case of error.  This includes either errors in configuration, such as this case (the secret-key was not confgured), or errors in signature validation. Instead the Java callout sets context variables which your API Proxy flow must test in order to determine next steps. 
 
@@ -284,26 +253,10 @@ The Verification policy attached to the rsa-t5 path checks for RSA-sha1.  The ve
 
 ```
 {
-  "app.name" : "HttpSigApp",
-  "apiproduct.name" : "HttpSigProduct",
-  "signature" : {
-    "keyId" : "CONSUMER_KEY_HERE",
-    "algorithm" : "rsa-sha256",
-    "headers" : "(request-target) date user-agent"
-  },
-  "verification": {
-    "isValid" : "false",
-    "requiredAlgorithm" : "rsa-sha1",
-    "requiredHeaders" : "",
-    "timeskew" : "",
-    "signingBase" : "",
-    "computedSignature" : "",
-    "error" : "algorithm used in signature (rsa-sha256) is not as required (rsa-sha1)"
-  }
+  "error" : "algorithm used in signature (rsa-sha256) is not as required (rsa-sha1)"
 }
 ```
 
-Notice  that the "isValid" property is false in this response. 
 
 
 ### Example 8: create and send an RSA signature using rsa-sha1
@@ -359,22 +312,7 @@ You will see a message like so:
 
 ```json
 {
-  "app.name" : "HttpSigApp",
-  "apiproduct.name" : "HttpSigProduct",
-  "signature" : {
-    "keyId" : "CONSUMER_KEY_HERE",
-    "algorithm" : "rsa-sha256",
-    "headers" : "(request-target) date user-agent"
-  },
-  "verification": {
-    "isValid" : "false",
-    "requiredAlgorithm" : "",
-    "requiredHeaders" : "date (request-target) nonce",
-    "timeskew" : "",
-    "signingBase" : "",
-    "computedSignature" : "",
-    "error" : "signature is missing required header (nonce)."
-  }
+  "error" : "signature is missing required header (nonce)."
 }
 ```
 
@@ -416,3 +354,15 @@ You will see a message like so:
   }
 }
 ```
+
+
+If you then send the same request again, using the same nonce, you will see an error: 
+
+```
+{
+  "error" : "re-used nonce."
+}
+```
+
+The nonce cache in the apiproxy has a TTL of 86400 seconds, or one day. 
+

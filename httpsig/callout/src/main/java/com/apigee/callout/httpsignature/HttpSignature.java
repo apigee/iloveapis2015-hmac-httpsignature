@@ -4,7 +4,7 @@
 // Author: Dino
 // Created Fri Aug 14 14:42:41 2015
 //
-// Last saved: <2015-October-07 09:49:46>
+// Last saved: <2015-October-20 16:19:38>
 // ------------------------------------------------------------------
 //
 // Copyright (c) 2015 Dino Chiesa
@@ -19,6 +19,14 @@ import java.util.HashMap;
 import java.util.Collections;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.net.URISyntaxException;
+
+import java.nio.charset.StandardCharsets;
+
+import java.security.PublicKey;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.Signature;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.ArrayUtils;
@@ -79,6 +87,61 @@ public class HttpSignature {
     public boolean isHmac() {
         return !_isRsa;
     }
+
+    public SigVerificationResult verify(String algorithm,
+                                  ReadOnlyHttpSigHeaderMap hmap,
+                                  KeyProvider kp)
+        throws Exception {
+
+        SigVerificationResult result = new SigVerificationResult();
+        result.signingBase = this.getSigningBase(hmap);
+        result.isValid = false;
+
+        String javaAlgoName = HttpSignature.supportedAlgorithms.get(algorithm);
+        if (this.isRsa()) {
+            // RSA
+            PublicKey publicKey = kp.getPublicKey();
+            Signature sig = Signature.getInstance(javaAlgoName);
+            sig.initVerify(publicKey);
+            sig.update(result.signingBase.getBytes(StandardCharsets.UTF_8));
+            byte[] signatureBytes = this.getSignatureBytes();
+            result.isValid = sig.verify(signatureBytes);
+        }
+        else {
+            // HMAC
+            String signingKey = kp.getSecretKey();
+            SecretKeySpec key = new SecretKeySpec(signingKey.getBytes("UTF-8"), javaAlgoName);
+            Mac hmac = Mac.getInstance(javaAlgoName);
+            hmac.init(key);
+
+            result.computedSignature
+                = Base64.encodeBase64String(hmac.doFinal(result.signingBase.getBytes("UTF-8")));
+
+            String providedSignature = this.getSignatureString();
+            result.isValid = result.computedSignature.equals(providedSignature);
+        }
+        return result;
+    }
+
+    public String getSigningBase(ReadOnlyHttpSigHeaderMap map) {
+        String[] headers = this.getHeaders();
+        String sigBase = "";
+        String path, v;
+
+        if (headers == null) {
+            headers = new String[] { "date" };
+        }
+
+        for (int i=0; i < headers.length; i++) {
+            if (!sigBase.equals("")) { sigBase += "\n";}
+            String h = headers[i];
+            v = map.getHeaderValue(h); // including special value
+            if (v==null || v.equals("")) v = "unknown header " + h;
+            sigBase += h + ": " + v;
+        }
+        return sigBase;
+    }
+
 
     private void parseHttpSignatureHeader(String header)
         throws IllegalStateException, UnsupportedOperationException {

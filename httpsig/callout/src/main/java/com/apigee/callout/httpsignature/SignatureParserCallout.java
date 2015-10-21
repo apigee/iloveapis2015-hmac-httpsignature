@@ -140,6 +140,8 @@ public class SignatureParserCallout implements Execution {
         ExecutionResult result = ExecutionResult.ABORT;
         Boolean isValid = false;
         try {
+            varName = varprefix + "_error";
+            msgCtxt.setVariable(varName, null);
             // get the full signature header payload
             HttpSignature sigObject = getFullSignature(msgCtxt);
 
@@ -160,9 +162,9 @@ public class SignatureParserCallout implements Execution {
             result = ExecutionResult.SUCCESS;
         }
         catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             varName = varprefix + "_error";
-            msgCtxt.setVariable(varName, "Exception " + e.toString());
+            msgCtxt.setVariable(varName, e.getMessage());
             varName = varprefix + "_stacktrace";
             msgCtxt.setVariable(varName, ExceptionUtils.getStackTrace(e));
         }

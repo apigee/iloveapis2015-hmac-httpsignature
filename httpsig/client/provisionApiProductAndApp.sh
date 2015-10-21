@@ -6,7 +6,7 @@
 # A bash script for provisioning an API Product and a developer app on
 # an organization in the Apigee Edge Gateway.
 #
-# Last saved: <2015-October-12 17:17:34>
+# Last saved: <2015-October-21 14:38:49>
 #
 
 verbosity=2
@@ -291,7 +291,7 @@ function clear_env_state() {
     if [ $resetonly -eq 1 ] ; then
 
         echo "  delete the api"
-        MYCURL  -X DELETE ${mgmtserver}/v1/o/${orgname}/apis/${apiname}
+        MYCURL -X DELETE ${mgmtserver}/v1/o/${orgname}/apis/${apiname}
         if [ ${CURL_RC} -ne 200 ]; then
           echo "failed to delete that API"
         fi 
@@ -314,6 +314,81 @@ function verify_public_key() {
 
   pubkey=$(<"$pubkeyfile")
   pubkey=`echo $pubkey | tr '\r\n' ' '`
+}
+
+
+function maybe_create_cache() {
+  local wantedcache="$1"
+  local existingcache
+  local ttl c exists
+
+  echo "check for existing caches..."
+  MYCURL -X GET ${mgmtbase}/v1/o/${org}/e/${env}/caches/
+  if [ ${CURL_RC} -ne 200 ]; then
+    echo 
+    echoerror "Cannot retrieve caches for that environment..."
+    echoerror
+    Cleanup
+    exit 1
+  fi
+
+  c=`cat ${CURL_OUT} | grep "\[" | sed -E 's/[]",[]//g'`
+  IFS=' '; declare -a cachearray=($c)
+  
+    # trim spaces
+    wantedcache="$(echo "${wantedcache}" | tr -d '[[:space:]]')"
+    exists=0
+    for i in "${!cachearray[@]}"
+    do
+      existingcache="${cachearray[i]}"
+      echo "found cache: ${existingcache}"
+      if [[ "$wantedcache" = "$existingcache" ]] ; then
+        exists=1
+      fi
+    done
+
+    if [ $exists -eq 0 ]; then 
+      echo "creating the cache \"$wantedcache\"..."
+      MYCURL -X POST \
+        -H "Content-type:application/json" \
+        "${mgmtbase}/v1/o/${org}/e/${env}/caches?name=$wantedcache" \
+        -d '{
+          "compression": {
+            "minimumSizeInKB": 1024
+          },
+          "distributed" : true,
+          "description": "cache supporting nonce mgmt in the HttpSig proxy",
+          "diskSizeInMB": 0,
+          "expirySettings": {
+            "timeoutInSec" : {
+              "value" : 86400
+            },
+            "valuesNull": false
+          },
+          "inMemorySizeInKB": 8000,
+          "maxElementsInMemory": 3000000,
+          "maxElementsOnDisk": 1000,
+          "overflowToDisk": false,
+          "persistent": false,
+          "skipCacheIfElementSizeInKBExceeds": "12"
+        }'
+      if [ ${CURL_RC} -eq 409 ]; then
+        ## should have caught this above, but just in case
+        echo
+        echo "That cache already exists."
+      elif [ ${CURL_RC} -ne 201 ]; then
+        echo
+        echoerror "failed creating the cache."
+        cat ${CURL_OUT}
+        echo
+        CleanUp
+        echo
+        exit 1
+      fi
+    else
+      echo "the cache $wantedcache exists..."
+    fi
+
 }
 
 
@@ -587,6 +662,7 @@ clear_env_state
 if [ $resetonly -eq 0 ] ; then
 
   verify_public_key
+  maybe_create_cache cache1
   if [ $deployalso -ne 0 ] ; then
     deploy_new_bundle
   fi
