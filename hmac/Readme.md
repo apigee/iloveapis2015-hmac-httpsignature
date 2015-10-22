@@ -97,6 +97,8 @@ error: HMAC does not verify
 The following example shows the client specifying the hmac explicitly.  
 You can do this if you dont have the openssl tool to compute the hmac. In this case you can use an online tool such as http://dinochiesa.github.io/hmacsha256.html to generate the hmac. Whatever tool you use, specify SHA-256 and base64 encoding, and use your consumer secret as the key. 
 
+For example, according to http://dinochiesa.github.io/hmacsha256.html, for the message "I love kittens." , using the secret key "fGyarq3GOMDQQUL4", the base64-encoded HMAC-SHA256 is "07vDgeeaAwi4CqRhyIX71OdQFGHNGwN3KFKq8+UpzEo=".  Therefore, you can invoke the client this way: 
+
 
 ```
 $ ./client.sh -o iloveapis2015 -e test -k QihwaKOLFwqSVC6lMD1FwDDczWdrNF3E \
