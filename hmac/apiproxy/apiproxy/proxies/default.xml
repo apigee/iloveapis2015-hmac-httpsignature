@@ -69,6 +69,20 @@
       <Condition>(proxy.pathsuffix MatchesPath "/headers") and (request.verb = "POST")</Condition>
     </Flow>
 
+
+    <Flow name='calc hmac - using consumer secret'>
+      <Description>calculate an HMAC on the post payload, using the consumer secret</Description>
+      <Request>
+        <Step><Name>VerifyAPIKey-1</Name></Step>
+        <Step><Name>Java-ValidateHmac-2</Name></Step>
+      </Request>
+      <Response>
+        <Step><Name>AssignMessage-Response</Name></Step>
+      </Response>
+      <Condition>(proxy.pathsuffix MatchesPath "/with-apikey") and (request.verb = "POST")</Condition>
+    </Flow>
+
+
     <Flow name='unknown request'>
       <Request>
         <Step><Name>RaiseFault-UnknownRequest</Name></Step>
