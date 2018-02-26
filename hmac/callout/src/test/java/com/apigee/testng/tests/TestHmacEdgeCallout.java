@@ -169,6 +169,33 @@ public class TestHmacEdgeCallout {
     }
 
     @Test()
+    public void test4_KnownOutcome_MD5_lowercase_nodash() {
+        // set up
+        Map m = new HashMap();
+        m.put("string-to-sign", "testing123");
+        m.put("key", "hello");
+        m.put("algorithm", "md5");
+        m.put("debug", "true");
+
+        // run it
+        ExecutionResult result = new HmacCreatorCallout(m).execute(msgCtxt, exeCtxt);
+
+        // retrieve output
+        String alg = msgCtxt.getVariable("hmac.javaizedAlg");
+        //System.out.println("algorithm: " + alg);
+        String error = msgCtxt.getVariable("hmac.error");
+        //System.out.println("error: " + error);
+        String hex = msgCtxt.getVariable("hmac.signature.hex");
+        //System.out.println("hex: " + hex);
+
+        // check result and output
+        Assert.assertEquals(result, ExecutionResult.SUCCESS);
+        Assert.assertEquals(error, null);
+        Assert.assertEquals(alg, "HmacMD5");
+        Assert.assertEquals(hex.toLowerCase(), "1fcd2cdb3005f4d9baef9f3957cd2d1f");
+    }
+
+    @Test()
     public void VerifyHmac1() {
         Map m = new HashMap();
         m.put("string-to-sign", "The quick brown fox...");

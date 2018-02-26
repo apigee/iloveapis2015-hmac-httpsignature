@@ -13,14 +13,14 @@ compile a Java callout for Apigee Edge that does HMAC generation.
 
 4. be sure to include a Java callout policy in your
    apiproxy/resources/policies directory. It should look like
-   this:  
+   this:
    ```xml
     <JavaCallout name="JavaHmacHandler" enabled='true'
                  continueOnError='false' async='false'>
       <DisplayName>Java HMAC Creator</DisplayName>
       <Properties>...</Properties>
       <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-      <ResourceURL>java://hmac-edge-callout.jar</ResourceURL>
+      <ResourceURL>java://hmac-edge-callout-1.0.1.jar</ResourceURL>
     </JavaCallout>
    ```
 
@@ -39,11 +39,11 @@ All these jars must be available on the classpath for the compile to
 succeed.  The build.sh script should download all of these files for
 you, automatically.
 
-If you want to download them manually: 
+If you want to download them manually:
 
   The first 2 jars are available in Apigee Edge. The first two are
   produced by Apigee; contact Apigee support to obtain these jars to allow
-  the compile, or get them here: 
+  the compile, or get them here:
   https://github.com/apigee/api-platform-samples/tree/master/doc-samples/java-cookbook/lib
 
   The Apache Commons Codec jar is shipped by the Apache Software
@@ -74,10 +74,10 @@ Configure it like so:
 </JavaCallout>
 ```
 
-NB: valid algorithm arguments are: 
-  sha-1, sha1, sha-224, sha224, sha-256, sha256, sha-384, sha-256, md5, md-5
+NB: valid algorithm arguments are:
+sha-1, sha1, sha-224, sha224, sha-256, sha256, sha-384, sha-256, md5, md-5
 
-The algorithm can be specified in upper, lower, or mixed case. 
+The algorithm can be specified in upper, lower, or mixed case.
 
 
 The callout emits these variables into the message context:
@@ -88,12 +88,12 @@ The callout emits these variables into the message context:
 - hmac.signature.hex - the signed hash, hex encoded.
 - hmac.signature.b64 - the signed hash, base64 encoded.
 
-This policy can be used to generate HMACs for outbound calls, or to verify HMACs for inbound calls. 
+This policy can be used to generate HMACs for outbound calls, or to verify HMACs for inbound calls.
 
-If you omit the "string-to-sign" property, the policy will default to computing an HMAC on the message.content. 
+If you omit the "string-to-sign" property, the policy will default to computing an HMAC on the message.content.
 
 
-You can also use a string-to-sign that concatenates the values of 
+You can also use a string-to-sign that concatenates the values of
 several variables and static strings, like this:
 
 ```xml
@@ -108,11 +108,11 @@ several variables and static strings, like this:
   </Properties>
   <FaultRules/>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://hmac-edge-callout.jar</ResourceURL>
+  <ResourceURL>java://hmac-edge-callout-1.0.1.jar</ResourceURL>
 </JavaCallout>
 ```
 
-In this case, the policy will resolve each of the variables surrounded by curlies and assign the resulting concatenation to string-to-sign. 
+In this case, the policy will resolve each of the variables surrounded by curlies and assign the resulting concatenation to string-to-sign.
 
 
 ## Validating Hmac
@@ -131,7 +131,7 @@ You can configure the policy to validate an hmac as well, by including the prope
   </Properties>
   <FaultRules/>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://hmac-edge-callout.jar</ResourceURL>
+  <ResourceURL>java://hmac-edge-callout-1.0.1.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -152,7 +152,7 @@ provided hmac.  In fault rules, you can test hmac.error :
 
 To run the unit tests, use maven:
 
-``` 
+```
 mvn clean test
 ```
 

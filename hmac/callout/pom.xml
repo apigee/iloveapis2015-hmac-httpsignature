@@ -5,14 +5,14 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.apigee.callout</groupId>
   <artifactId>hmac-edge-callout</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.1</version>
   <name>HmacEdgeCallout</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <java.version>1.7</java.version>
+    <java.version>1.8</java.version>
     <apiproxy.java.rsrc.dir>../apiproxy/apiproxy/resources/java</apiproxy.java.rsrc.dir>
   </properties>
 
@@ -81,7 +81,7 @@ these commands:
     </dependency>
   </dependencies>
   <build>
-    <finalName>${project.artifactId}</finalName>
+    <finalName>${project.artifactId}-${project.version}</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -131,7 +131,7 @@ these commands:
               <tasks>
                 <copy todir="${apiproxy.java.rsrc.dir}">
                   <fileset dir="${project.build.directory}">
-                    <include name="${project.artifactId}.jar"/>
+                    <include name="${project.artifactId}-${project.version}.jar"/>
                     <!--
                          include any additional dependencies here
 
@@ -152,7 +152,7 @@ these commands:
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.3.2</version>
+        <version>3.7.0</version>
         <configuration>
           <source>${java.version}</source>
           <target>${java.version}</target>
