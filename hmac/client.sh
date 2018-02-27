@@ -2,7 +2,7 @@
 # -*- mode:shell-script; coding:utf-8; -*-
 #
 # Created: <Wed Oct 21 16:58:12 2015>
-# Last Updated: <2015-October-21 18:18:42>
+# Last Updated: <2018-February-26 16:12:54>
 #
 
 payload="Four score and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal."
@@ -11,8 +11,7 @@ payload="Four score and seven years ago our fathers brought forth on this contin
 function usage() {
   local CMD=`basename $0`
   echo "$CMD: "
-  echo "  Creates an API Product for the hmac proxy, and a developer app"
-  echo "  that is enabled for that product. Emits the client id and secret."
+  echo "  Invokes the hmac proxy."
   echo "  Uses the curl utility."
   echo "usage: "
   echo "  $CMD [options] "
