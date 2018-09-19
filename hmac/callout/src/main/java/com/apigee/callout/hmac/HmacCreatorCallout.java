@@ -5,36 +5,37 @@ import com.apigee.flow.execution.ExecutionResult;
 import com.apigee.flow.execution.IOIntensive;
 import com.apigee.flow.execution.spi.Execution;
 import com.apigee.flow.message.MessageContext;
-
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.lang.text.StrSubstitutor;
-
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
-
-import com.apigee.callout.hmac.TemplateString;
+import com.google.common.io.BaseEncoding;
+import com.google.common.base.Throwables;
 
 @IOIntensive
 public class HmacCreatorCallout implements Execution {
+    private static final String varnamePrefix = "hmac.";
     private static final String defaultAlgorithm = "SHA-256";
     private static final String TRUE = "true";
     //private static Pattern algPattern = Pattern.compile("^(?:(SHA)-?(1|224|256|384|512))|(?:(MD)-?(5))$", Pattern.CASE_INSENSITIVE);
-    private static Pattern algMd5Pattern = Pattern.compile("^(MD)-?(5)$", Pattern.CASE_INSENSITIVE);
-    private static Pattern algShaPattern = Pattern.compile("^(SHA)-?(1|224|256|384|512)$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern algMd5Pattern = Pattern.compile("^(MD)-?(5)$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern algShaPattern = Pattern.compile("^(SHA)-?(1|224|256|384|512)$", Pattern.CASE_INSENSITIVE);
+    private static final String variableReferencePatternString = "(.*?)\\{([^\\{\\} ]+?)\\}(.*?)";
+    private static final Pattern variableReferencePattern = Pattern.compile(variableReferencePatternString);
 
     private Map properties; // read-only
 
     public HmacCreatorCallout (Map properties) {
-        this.properties = properties;
+        this.properties = Collections.unmodifiableMap(properties);
+    }
+
+    private static String varName(String base) {
+        return varnamePrefix + base;
     }
 
     private String getStringToSign(MessageContext msgCtxt) throws Exception {
@@ -43,15 +44,7 @@ public class HmacCreatorCallout implements Execution {
             // by default, get the content of the message (either request or response)
             return msgCtxt.getVariable("message.content");
         }
-
-        // replace ALL curly-braced items in the string-to-sign
-        TemplateString ts = new TemplateString(msg);
-        Map valuesMap = new HashMap();
-        for (String s : ts.variableNames) {
-            valuesMap.put(s, msgCtxt.getVariable(s));
-        }
-        StrSubstitutor sub = new StrSubstitutor(valuesMap);
-        String resolvedString = sub.replace(ts.template);
+        String resolvedString = resolvePropertyValue(msg,msgCtxt);
         return resolvedString;
     }
 
@@ -67,7 +60,7 @@ public class HmacCreatorCallout implements Execution {
         return key;
     }
 
-    private String getHmac(MessageContext msgCtxt) throws Exception {
+    private String getExpectedHmac(MessageContext msgCtxt) throws Exception {
         String hmac = (String) this.properties.get("hmac-base64");
         if (hmac == null || hmac.equals("")) {
             return null;
@@ -103,19 +96,25 @@ public class HmacCreatorCallout implements Execution {
         return alg;
     }
 
-    // If the value of a property value begins and ends with curlies,
-    // and contains no spaces, eg, {apiproxy.name}, then "resolve" the
-    // value by de-referencing the context variable whose name appears
-    // between the curlies.
+    // If the value of a property contains any pairs of curlies,
+    // eg, {apiproxy.name}, then "resolve" the value by de-referencing
+    // the context variables whose names appear between curlies.
     private String resolvePropertyValue(String spec, MessageContext msgCtxt) {
-        if (spec.startsWith("{") && spec.endsWith("}") &&
-            (spec.indexOf(" ") == -1)) {
-            String varname = spec.substring(1,spec.length() - 1);
-            String value = msgCtxt.getVariable(varname);
-            return value;
+        Matcher matcher = variableReferencePattern.matcher(spec);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            matcher.appendReplacement(sb, "");
+            sb.append(matcher.group(1));
+            Object v = msgCtxt.getVariable(matcher.group(2));
+            if (v != null){
+                sb.append((String) v );
+            }
+            sb.append(matcher.group(3));
         }
-        return spec;
+        matcher.appendTail(sb);
+        return sb.toString();
     }
+
 
     private static String javaizeAlgorithmName(MessageContext msgCtxt,String alg)
         throws IllegalStateException {
@@ -132,13 +131,14 @@ public class HmacCreatorCallout implements Execution {
     }
 
     private void clearVariables(MessageContext msgCtxt) {
-        msgCtxt.removeVariable("hmac.error");
-        msgCtxt.removeVariable("hmac.stacktrace");
-        msgCtxt.removeVariable("hmac.javaizedAlg");
-        msgCtxt.removeVariable("hmac.alg");
-        msgCtxt.removeVariable("hmac.string-to-sign");
-        msgCtxt.removeVariable("hmac.signature.hex");
-        msgCtxt.removeVariable("hmac.signature.b64");
+        msgCtxt.removeVariable(varName("error"));
+        msgCtxt.removeVariable(varName("stacktrace"));
+        msgCtxt.removeVariable(varName("javaizedAlg"));
+        msgCtxt.removeVariable(varName("alg"));
+        msgCtxt.removeVariable(varName("string-to-sign"));
+        msgCtxt.removeVariable(varName("signature.hex"));
+        msgCtxt.removeVariable(varName("signature.b64"));
+        msgCtxt.removeVariable(varName("signature.b64url"));
     }
 
     public ExecutionResult execute(MessageContext msgCtxt,
@@ -149,39 +149,41 @@ public class HmacCreatorCallout implements Execution {
             String stringToSign = getStringToSign(msgCtxt);
             String algorithm = getAlgorithm(msgCtxt);
             boolean debug = getDebug(msgCtxt);
-            msgCtxt.setVariable("hmac.alg", algorithm);
+            msgCtxt.setVariable(varName("alg"), algorithm);
 
             String javaizedAlg = javaizeAlgorithmName(msgCtxt,algorithm);
             if (debug) {
-                msgCtxt.setVariable("hmac.javaizedAlg", javaizedAlg);
+                msgCtxt.setVariable(varName("javaizedAlg"), javaizedAlg);
             }
 
             Mac hmac = Mac.getInstance(javaizedAlg);
             SecretKeySpec key = new SecretKeySpec(signingKey.getBytes(), javaizedAlg);
             hmac.init(key);
             byte[] hmacBytes = hmac.doFinal(stringToSign.getBytes("UTF-8"));
-            String sigHex = Hex.encodeHexString(hmacBytes);
-            String sigB64 = Base64.encodeBase64String(hmacBytes);
+            String sigHex = BaseEncoding.base16().encode(hmacBytes);
+            String sigB64 = BaseEncoding.base64().encode(hmacBytes);
+            String sigB64Url = BaseEncoding.base64Url().encode(hmacBytes);
 
             if (debug) {
-                msgCtxt.setVariable("hmac.key", signingKey);
+                msgCtxt.setVariable(varName("key"), signingKey);
             }
-            msgCtxt.setVariable("hmac.string-to-sign", stringToSign);
-            msgCtxt.setVariable("hmac.signature.hex", sigHex);
-            msgCtxt.setVariable("hmac.signature.b64", sigB64);
+            msgCtxt.setVariable(varName("string-to-sign"), stringToSign);
+            msgCtxt.setVariable(varName("signature.hex"), sigHex);
+            msgCtxt.setVariable(varName("signature.b64"), sigB64);
+            msgCtxt.setVariable(varName("signature.b64url"), sigB64Url);
 
             // presence of hmac-base64 property indicates verification wanted
-            String expectedHmac = getHmac(msgCtxt);
+            String expectedHmac = getExpectedHmac(msgCtxt);
             if (expectedHmac !=null) {
                 if (!sigB64.equals(expectedHmac)) {
-                    msgCtxt.setVariable("hmac.error", "HMAC does not verify");
+                    msgCtxt.setVariable(varName("error"), "HMAC does not verify");
                     return ExecutionResult.ABORT;
                 }
             }
         }
         catch (Exception e){
-            msgCtxt.setVariable("hmac.error", e.getMessage());
-            msgCtxt.setVariable("hmac.stacktrace", ExceptionUtils.getStackTrace(e));
+            msgCtxt.setVariable(varName("error"), e.getMessage());
+            msgCtxt.setVariable(varName("stacktrace"), Throwables.getStackTraceAsString(e));
             return ExecutionResult.ABORT;
         }
         return ExecutionResult.SUCCESS;

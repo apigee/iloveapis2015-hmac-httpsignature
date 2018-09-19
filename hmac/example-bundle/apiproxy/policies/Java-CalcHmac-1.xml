@@ -1,4 +1,3 @@
-
 <JavaCallout name='Java-CalcHmac-1'>
   <DisplayName>Java-CalcHmac-1</DisplayName>
   <Properties>
@@ -8,5 +7,5 @@
     <Property name="debug">true</Property>
   </Properties>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://hmac-edge-callout-1.0.1.jar</ResourceURL>
+  <ResourceURL>java://hmac-edge-callout-1.0.2.jar</ResourceURL>
 </JavaCallout>

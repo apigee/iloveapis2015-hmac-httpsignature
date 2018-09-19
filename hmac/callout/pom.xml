@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.apigee.callout</groupId>
   <artifactId>hmac-edge-callout</artifactId>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
   <name>HmacEdgeCallout</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>
@@ -13,6 +13,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.version>1.8</java.version>
+    <jmockit.version>1.7</jmockit.version>
+    <testng.version>6.8.7</testng.version>
+    <guava.version>25.1-jre</guava.version>
     <apiproxy.java.rsrc.dir>../example-bundle/apiproxy/resources/java</apiproxy.java.rsrc.dir>
   </properties>
 
@@ -20,30 +23,23 @@
     <dependency>
       <groupId>org.testng</groupId>
       <artifactId>testng</artifactId>
-      <version>6.8.7</version>
+      <version>${testng.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>com.googlecode.jmockit</groupId>
       <artifactId>jmockit</artifactId>
-      <version>1.7</version>
+      <version>${jmockit.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-        <groupId>commons-lang</groupId>
-        <artifactId>commons-lang</artifactId>
-        <version>2.6</version>
-      <scope>compile</scope>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>${guava.version}</version>
     </dependency>
 
-    <dependency>
-        <groupId>commons-codec</groupId>
-        <artifactId>commons-codec</artifactId>
-        <version>1.7</version>
-      <scope>compile</scope>
-    </dependency>
 <!--
 
 The following 2 jar dependencies from Apigee are not avaiable in any
@@ -134,9 +130,9 @@ these commands:
                     <include name="${project.artifactId}-${project.version}.jar"/>
                     <!--
                          include any additional dependencies here
-
-                    <include name="lib/guava-18.0.jar"/>
                     -->
+                    <include name="lib/guava-${guava.version}.jar"/>
+
                   </fileset>
                   <mapper type="flatten"/>
                 </copy>

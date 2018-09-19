@@ -20,7 +20,7 @@ compile a Java callout for Apigee Edge that does HMAC generation.
       <DisplayName>Java HMAC Creator</DisplayName>
       <Properties>...</Properties>
       <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-      <ResourceURL>java://hmac-edge-callout-1.0.1.jar</ResourceURL>
+      <ResourceURL>java://hmac-edge-callout-1.0.2.jar</ResourceURL>
     </JavaCallout>
    ```
 
@@ -32,24 +32,11 @@ compile a Java callout for Apigee Edge that does HMAC generation.
 
 - Apigee Edge expressions v1.0
 - Apigee Edge message-flow v1.0
-- Apache commons codec v1.7
-
+- Google Guava
 
 All these jars must be available on the classpath for the compile to
-succeed.  The build.sh script should download all of these files for
+succeed.  The maven build will download all of these files for
 you, automatically.
-
-If you want to download them manually:
-
-  The first 2 jars are available in Apigee Edge. The first two are
-  produced by Apigee; contact Apigee support to obtain these jars to allow
-  the compile, or get them here:
-  https://github.com/apigee/api-platform-samples/tree/master/doc-samples/java-cookbook/lib
-
-  The Apache Commons Codec jar is shipped by the Apache Software
-  Foundation. You should compile against v1.7, because that is what
-  Apigee Edge currently uses.
-  http://commons.apache.org/proper/commons-codec/
 
 
 ## Usage Notes
@@ -108,7 +95,7 @@ several variables and static strings, like this:
   </Properties>
   <FaultRules/>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://hmac-edge-callout-1.0.1.jar</ResourceURL>
+  <ResourceURL>java://hmac-edge-callout-1.0.2.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -131,7 +118,7 @@ You can configure the policy to validate an hmac as well, by including the prope
   </Properties>
   <FaultRules/>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://hmac-edge-callout-1.0.1.jar</ResourceURL>
+  <ResourceURL>java://hmac-edge-callout-1.0.2.jar</ResourceURL>
 </JavaCallout>
 ```
 

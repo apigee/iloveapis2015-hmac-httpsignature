@@ -1,4 +1,4 @@
-# HMAC
+# HMAC Callout
 
 This directory contains Java source code for a callout which produces HMAC,
 as well as an example API proxy, which shows how to use the callout.

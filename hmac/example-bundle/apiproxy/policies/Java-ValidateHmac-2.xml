@@ -1,4 +1,3 @@
-
 <JavaCallout name='Java-ValidateHmac-2'>
   <Properties>
     <Property name="string-to-sign">{message.content}</Property>
@@ -8,5 +7,5 @@
     <Property name="hmac-base64">{request.header.hmac-base64}</Property>
   </Properties>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://hmac-edge-callout-1.0.1.jar</ResourceURL>
+  <ResourceURL>java://hmac-edge-callout-1.0.2.jar</ResourceURL>
 </JavaCallout>
