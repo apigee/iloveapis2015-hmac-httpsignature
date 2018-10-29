@@ -17,9 +17,16 @@ This example is not an official Google product, nor is it part of an official Go
 The spec describes how to sign a set of HTTP headers in a request.
 According to the specification, an HTTP signature looks like this:
 
-Signature: keyId="mykey",algorithm="hmac-sha256",headers="(request-target) date",signature="udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI="
+```
+Signature: keyId="mykey",
+           algorithm="hmac-sha256",
+           headers="(request-target) date",
+           signature="udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI="
+```
+(newlines added for clarity)
 
-These are the elements:
+
+These are the elements of a signature:
 
 | element     | purpose |
 |-------------|------------------------------------------------|
@@ -28,43 +35,16 @@ These are the elements:
 | headers     | the set of headers which has been signed. This element is optional, according to the spec.  |
 | signature   | the base64-encoded signature value.            |
 
-Receivers of an HTTP request bearing a signature can lookup a key from the asserted keyId, and then verify the asserted signature on the set of headers. If the signature is valid, then the receiver can be assured the request has not been modified in transit.
+Receivers of an HTTP request bearing a signature can lookup a key from the asserted keyId, and then verify the asserted signature on the set of headers. If the signature is valid, then the receiver can be assured the set of signed headers in the request have not been modified in transit.
 
-
-## Building the Code
-
-You do not need to build the code to use this callout. But if you want to, you can do so.
-
-1. unpack (if you can read this, you've already done that).
-
-2. obtain the apigee pre-reqs.
-   ```
-    ./buildsetup.sh
-   ```
-
-   You must have maven installed in order for the above step to succeed.
-
-3. run the build:
-   ```
-    mvn clean package
-   ```
-
-   The above step will also run the included tests.
-
-After building the code, copy the resulting jar file, available in
-target/edge-custom-httpsig-1.0.2.jar to your apiproxy/resources/java
-directory, or upload the jar to a resource in your org, env, or proxy.
-
-
-## Dependencies
-
-- Apigee Edge expressions v1.0
-- Apigee Edge message-flow v1.0
-- Google Guava 26.0-jre
+There is a "special" header name "(request-target)" - this represents the verb and URL path + query of the request.
+Applications can use the Digest header (coupled with a following HTTP digest check) to verify the integrity of the payload of the request.
 
 
 
 ## Using the callout
+
+You do not need to build the code to use this callout. But if you want to, you can do so.
 
 You must use the callout in two phases: parse and verify. The parse phase
 extracts the elements from the signature header. The verify phase actually
@@ -390,6 +370,37 @@ algorithm. Do not specify a public-key property when verifying
 signatures that use HMAC algorithms. Do not specify a secret-key
 property when verifying signatures with RSA algorithms.
 
+
+## Building the Code
+
+You do not need to build the code to use this callout. But if you want to, you can do so.
+
+1. unpack (if you can read this, you've already done that).
+
+2. obtain the apigee pre-reqs.
+   ```
+    ./buildsetup.sh
+   ```
+
+   You must have maven installed in order for the above step to succeed.
+
+3. run the build:
+   ```
+    mvn clean package
+   ```
+
+   The above step will also run the included tests.
+
+After building the code, copy the resulting jar file, available in
+target/edge-custom-httpsig-1.0.2.jar to your apiproxy/resources/java
+directory, or upload the jar to a resource in your org, env, or proxy.
+
+
+## Dependencies
+
+- Apigee Edge expressions v1.0
+- Apigee Edge message-flow v1.0
+- Google Guava 26.0-jre
 
 
 ## Support
