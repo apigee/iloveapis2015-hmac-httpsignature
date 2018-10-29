@@ -33,16 +33,23 @@ Receivers of an HTTP request bearing a signature can lookup a key from the asser
 
 ## Building the Code
 
-You do not need to build the code to use this callout. But if you want to , you can do so.
+You do not need to build the code to use this callout. But if you want to, you can do so.
 
 1. unpack (if you can read this, you've already done that).
 
-2. run the build:
-```
- mvn clean package
-```
+2. obtain the apigee pre-reqs.
+   ```
+    ./buildsetup.sh
+   ```
 
-The above step will also run the included tests.
+   You must have maven installed in order for the above step to succeed.
+
+3. run the build:
+   ```
+    mvn clean package
+   ```
+
+   The above step will also run the included tests.
 
 After building the code, copy the resulting jar file, available in
 target/edge-custom-httpsig-1.0.2.jar to your apiproxy/resources/java
@@ -53,15 +60,18 @@ directory, or upload the jar to a resource in your org, env, or proxy.
 
 - Apigee Edge expressions v1.0
 - Apigee Edge message-flow v1.0
-- Apache commons lang 2.6
-- Apache commons codec 1.7
+- Google Guava 26.0-jre
 
-The maven build (with the pom.xml file) will obtain the latter two.
 
 
 ## Using the callout
 
-You must use the callout in two phases: parse and verify. The parse phase extracts the elements from the signature header. The verify phase actually verifies the extracted signature. These are separate phases to allow the API proxy to use the output of the parse phase, specifically the keyId, to retrieve a key from whatever store is appropriate.  Only after the parse can the proxy know the key to use for verification. So the logic works like this:
+You must use the callout in two phases: parse and verify. The parse phase
+extracts the elements from the signature header. The verify phase actually
+verifies the extracted signature. These are separate phases to allow the API
+proxy to use the output of the parse phase, specifically the keyId, to retrieve
+a key from whatever store is appropriate.  Only after the parse can the proxy
+know the key to use for verification. So the logic works like this:
 
 1. parse the signature header to determine the keyId
 2. retrieve the key

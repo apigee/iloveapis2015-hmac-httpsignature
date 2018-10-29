@@ -167,6 +167,7 @@ mvn install:install-file \
                 <copy todir="${apiproxy.java.rsrc.dir}">
                   <fileset dir="${project.build.directory}">
                     <include name="${project.artifactId}-${project.version}.jar"/>
+                    <include name="lib/guava-${guava.version}.jar"/>
                     <!-- include other required dependencies here
                          <include name="lib/libname-x.y.z.jar"/>
                     -->

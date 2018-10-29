@@ -3,13 +3,23 @@
 This directory contains the Java source code and Java jars required to
 compile a Java callout for Apigee Edge that does HMAC generation.
 
+
 ## Building The Code
+
+You do not need to build the code to use this callout. But if you want to, you can do so.
 
 1. unpack (if you can read this, you've already done that).
 
-2. You can build this with maven:  mvn clean package
+2. obtain the apigee pre-reqs.
+   ```
+    ./buildsetup.sh
+   ```
 
-3. copy target/hmac-edge-callout.jar to your apiproxy/resources/java directory
+   You must have maven installed in order for the above step to succeed.
+
+2. build with maven:  `mvn clean package`
+
+3. copy target/hmac-edge-callout-1.0.2.jar to your apiproxy/resources/java directory
 
 4. be sure to include a Java callout policy in your
    apiproxy/resources/policies directory. It should look like
@@ -32,7 +42,7 @@ compile a Java callout for Apigee Edge that does HMAC generation.
 
 - Apigee Edge expressions v1.0
 - Apigee Edge message-flow v1.0
-- Google Guava
+- Google Guava 26.0
 
 All these jars must be available on the classpath for the compile to
 succeed.  The maven build will download all of these files for
@@ -57,7 +67,7 @@ Configure it like so:
   </Properties>
   <FaultRules/>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://hmac-edge-callout.jar</ResourceURL>
+  <ResourceURL>java://hmac-edge-callout-1.0.2.jar</ResourceURL>
 </JavaCallout>
 ```
 
