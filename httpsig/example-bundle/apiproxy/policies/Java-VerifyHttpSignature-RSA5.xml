@@ -4,6 +4,6 @@
     <Property name='public-key'>{verifyapikey.VerifyApiKey-1.public_key}</Property>
     <Property name='headers'>date (request-target)</Property>
   </Properties>
-  <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://httpsig-edge-callout-1.0.1.jar</ResourceURL>
+  <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
+  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
 </JavaCallout>

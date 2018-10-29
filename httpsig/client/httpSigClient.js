@@ -5,29 +5,29 @@
 // Signature that uses RSA signing, or HMAC signing.
 //
 // created: Mon Jul 20 11:11:32 2015
-// last saved: <2015-October-12 14:56:23>
+// last saved: <2018-October-29 12:56:11>
 
-var fs = require('fs');
-var http = require('http');
-var httpSignature = require('http-signature');
-var Getopt = require('node-getopt');
-var defaultPath = 'rsa-t1';
-var getopt = new Getopt([
+const fs = require('fs'),
+      http = require('http'),
+      httpSignature = require('http-signature'),
+      Getopt = require('node-getopt'),
+      defaults = {path : 'rsa-t1', alg: 'rsa-sha256'},
+      getopt = new Getopt([
       ['p' , 'privkey=ARG', 'PEM file for the private key. (only for RSA)'],
       ['s' , 'secretkey=ARG', 'secret key. (only for HMAC)'],
       ['o' , 'org=ARG', 'the Edge organization'],
       ['e' , 'env=ARG', 'the Edge organization (Default: test)'],
       ['k' , 'apikey=ARG', 'the API key to use for the request'],
-      ['t' , 'path=ARG', 'the path to use (Default ' +  defaultPath + ')'],
+      ['t' , 'path=ARG', 'the path to use (Default ' +  defaults.path + ')'],
       ['n' , 'nonce=ARG', 'set the nonce to use (Default: no nonce)'],
       ['H' , 'header=ARG', 'set+sign an additional header (Name:value) in the request'],
-      ['a' , 'algorithm=ARG', 'set the RSA alg to use (Default: rsa-sha512)'],
+      ['a' , 'algorithm=ARG', 'set the RSA alg to use (Default: '+defaults.alg+')'],
       //['v', 'verbose'],
       ['h' , 'help']
-    ]).bindHelp(),
+ ]).bindHelp();
 
     // process.argv starts with 'node' and 'scriptname.js'
-    opt = getopt.parse(process.argv.slice(2));
+var opt = getopt.parse(process.argv.slice(2));
 
 
 function stringStartsWith(s, prefix, position) {
@@ -60,9 +60,9 @@ var requestOptions = {
 
 var signatureOptions = {
   key: null,
-  algorithm: 'rsa-sha512',
+  algorithm: 'will-be-set-later',
   headers: [ '(request-target)', 'date', 'user-agent' ],
-  draft: '03'
+  draft: '04'
 };
 
 
@@ -83,7 +83,9 @@ if (!opt.options.apikey) {
 signatureOptions.keyId = opt.options.apikey;
 
 
-if (opt.options.algorithm) {
+if ( ! opt.options.algorithm) {
+  opt.options.algorithm = defaults.alg;
+}
   opt.options.algorithm = opt.options.algorithm.toLowerCase();
   // validate the algorithm
   var supportedAlgorithms = ['rsa-sha1', 'rsa-sha256', 'rsa-sha512',
@@ -94,7 +96,7 @@ if (opt.options.algorithm) {
     process.exit(1);
   }
   signatureOptions.algorithm = opt.options.algorithm;
-}
+
 
 // validate secretkey is used with HMAC and private key is used with RSA
 if (stringStartsWith(opt.options.algorithm,'rsa')) {
@@ -138,7 +140,7 @@ if (opt.options.path) {
   requestOptions.path = requestOptions.path.replace("PATH", opt.options.path);
 }
 else {
-  requestOptions.path = requestOptions.path.replace("PATH", defaultPath);
+  requestOptions.path = requestOptions.path.replace("PATH", defaults.path);
 }
 
 // eliminate double-slashes

@@ -1,45 +1,47 @@
-package com.apigee.callout.httpsignature;
-
-import java.io.InputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ArrayList;
-import java.nio.charset.StandardCharsets;
-
-import java.security.spec.X509EncodedKeySpec;
-import java.security.spec.InvalidKeySpecException;
-import java.security.PublicKey;
-import java.security.KeyFactory;
-import java.security.Signature;
-import java.security.NoSuchAlgorithmException;
+package com.google.apigee.callout.httpsignature;
 
 import com.apigee.flow.execution.ExecutionContext;
 import com.apigee.flow.execution.ExecutionResult;
 import com.apigee.flow.execution.IOIntensive;
 import com.apigee.flow.execution.spi.Execution;
-import com.apigee.flow.message.MessageContext;
 import com.apigee.flow.message.Message;
-
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
-
-import com.apigee.callout.httpsignature.HttpSignature;
-
+import com.apigee.flow.message.MessageContext;
+import com.google.apigee.callout.httpsignature.HttpSignature;
+import com.google.common.base.Joiner;
+import com.google.common.base.Throwables;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @IOIntensive
 public class SignatureParserCallout implements Execution {
+    private final static String variableReferencePatternString = "(.*?)\\{([^\\{\\} ]+?)\\}(.*?)";
+    private final static Pattern variableReferencePattern = Pattern.compile(variableReferencePatternString);
+    private static final Joiner spaceJoiner = Joiner.on(" ");
+    private static final String _prefix = "httpsig_";
 
     private Map properties; // read-only
 
     public SignatureParserCallout (Map properties) {
         this.properties = properties;
+    }
+
+    private static String varName(String s) {
+        return _prefix + s;
     }
 
     private String getMultivaluedHeader(MessageContext msgCtxt, String header) {
@@ -86,16 +88,24 @@ public class SignatureParserCallout implements Execution {
         return httpsig;
     }
 
-    // If the value of a property value begins and ends with curlies,
+    // If the value of a property contains a pair of curlies,
     // eg, {apiproxy.name}, then "resolve" the value by de-referencing
     // the context variable whose name appears between the curlies.
+    // If the variable name is not known, then it returns a null.
     private String resolvePropertyValue(String spec, MessageContext msgCtxt) {
-        if (spec.startsWith("{") && spec.endsWith("}")) {
-            String varname = spec.substring(1,spec.length() - 1);
-            String value = msgCtxt.getVariable(varname);
-            return value;
+        Matcher matcher = variableReferencePattern.matcher(spec);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            matcher.appendReplacement(sb, "");
+            sb.append(matcher.group(1));
+            Object v = msgCtxt.getVariable(matcher.group(2));
+            if (v != null){
+                sb.append((String) v );
+            }
+            sb.append(matcher.group(3));
         }
-        return spec;
+        matcher.appendTail(sb);
+        return (sb.length() > 0) ? sb.toString() : null;
     }
 
     private String getSigningBase(MessageContext msgCtxt, HttpSignature sig)
@@ -136,41 +146,30 @@ public class SignatureParserCallout implements Execution {
     public ExecutionResult execute(MessageContext msgCtxt,
                                    ExecutionContext exeCtxt) {
         String varName;
-        String varprefix = "httpsig";
         ExecutionResult result = ExecutionResult.ABORT;
         Boolean isValid = false;
         try {
-            varName = varprefix + "_error";
-            msgCtxt.setVariable(varName, null);
+            msgCtxt.setVariable(varName("error"), null);
             // get the full signature header payload
             HttpSignature sigObject = getFullSignature(msgCtxt);
 
             // emit the 4 pieces into context variables
-            varName = varprefix + "_algorithm";
-            msgCtxt.setVariable(varName, sigObject.getAlgorithm());
-
-            varName = varprefix + "_keyId";
-            msgCtxt.setVariable(varName, sigObject.getKeyId());
-
-            varName = varprefix + "_signature";
-            msgCtxt.setVariable(varName, sigObject.getSignatureString());
-
-            varName = varprefix + "_headers";
-            msgCtxt.setVariable(varName, StringUtils.join(sigObject.getHeaders()," "));
+            msgCtxt.setVariable(varName("algorithm"), sigObject.getAlgorithm());
+            msgCtxt.setVariable(varName("keyId"), sigObject.getKeyId());
+            msgCtxt.setVariable(varName("signature"), sigObject.getSignatureString());
+            msgCtxt.setVariable(varName("headers"), spaceJoiner.join(sigObject.getHeaders()));
 
             isValid = true;
             result = ExecutionResult.SUCCESS;
         }
         catch (Exception e) {
             //e.printStackTrace();
-            varName = varprefix + "_error";
-            msgCtxt.setVariable(varName, e.getMessage());
-            varName = varprefix + "_stacktrace";
-            msgCtxt.setVariable(varName, ExceptionUtils.getStackTrace(e));
+            msgCtxt.setVariable(varName("error"), e.getMessage());
+            msgCtxt.setVariable(varName("stacktrace"), Throwables.getStackTraceAsString(e));
         }
 
-        varName = varprefix + "_isSuccess";
-        msgCtxt.setVariable(varName, isValid);
+        msgCtxt.setVariable(varName("isSuccess"), isValid);
+        msgCtxt.setVariable(varName("success"), isValid);
         return result;
     }
 }

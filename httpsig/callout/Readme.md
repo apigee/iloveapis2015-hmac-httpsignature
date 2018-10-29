@@ -4,19 +4,36 @@ This directory contains the Java source code and Java jars required to
 compile a Java callout for Apigee Edge that does Verification of HTTP
 Signatures, either RSA or HMAC.
 
-HTTP Signature is a [draft specification for an IETF standard](http://tools.ietf.org/html/draft-cavage-http-signatures-05).
+HTTP Signature is a [draft specification for an IETF standard](https://tools.ietf.org/html/draft-cavage-http-signatures-10).
 
-It describes how to generate and verify signatures on HTTP requests.
+It describes how to generate and verify signatures on HTTP requests. This specification has been in draft status since at least 2015, and it's not clear that it will move to final standardization and "recommendation" status. Even so, it's stable and it works.
 
+## Disclaimer
 
-A signature looks like this:
+This example is not an official Google product, nor is it part of an official Google product.
+
+## Quick Overview of HTTP Signature
+
+The spec describes how to sign a set of HTTP headers in a request.
+According to the specification, an HTTP signature looks like this:
 
 Signature: keyId="mykey",algorithm="hmac-sha256",headers="(request-target) date",signature="udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI="
 
+These are the elements:
+
+| element     | purpose |
+|-------------|------------------------------------------------|
+| keyId       | identify the key used to produce the signature |
+| algorithm   | the algorithm used to produce the sig. Supported mechanisms include hmac-sha256 and rsa-sha256.  |
+| headers     | the set of headers which has been signed. This element is optional, according to the spec.  |
+| signature   | the base64-encoded signature value.            |
+
+Receivers of an HTTP request bearing a signature can lookup a key from the asserted keyId, and then verify the asserted signature on the set of headers. If the signature is valid, then the receiver can be assured the request has not been modified in transit.
 
 
-Building the Code
---------------------
+## Building the Code
+
+You do not need to build the code to use this callout. But if you want to , you can do so.
 
 1. unpack (if you can read this, you've already done that).
 
@@ -25,79 +42,80 @@ Building the Code
  mvn clean package
 ```
 
-3. if you edit proxy bundles offline, copy the resulting jar file, available in  target/edgecallout-http-signature-verifier.jar to your apiproxy/resources/java directory.  If you don't edit proxy bundles offline, upload the jar file into the API Proxy via the Edge API Proxy Editor .
+The above step will also run the included tests.
+
+After building the code, copy the resulting jar file, available in
+target/edge-custom-httpsig-1.0.2.jar to your apiproxy/resources/java
+directory, or upload the jar to a resource in your org, env, or proxy.
 
 
-4. include TWO Java callout policies in your
-   apiproxy/resources/policies directory. The first does the parsing, the second
-   performs the signature validation and verification. The first should
-   like this:
-   ```xml
-    <JavaCallout name='Java-ParseHttpSignature'>
-      <Properties/>
-      <ClassName>com.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
-      <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
-    </JavaCallout>
-   ```
-   The second should look like this:
-   ```xml
-    <JavaCallout name='Java-VerifyHttpSignature1'>
-      <Properties>
-        <Property name='public-key'>{verifyapikey.VerifyApiKey-1.public_key}</Property>
-      </Properties>
-      <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-      <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
-    </JavaCallout>
-   ```
-
-5. use the Edge UI, or a command-line tool like pushapi (See
-   https://github.com/carloseberhardt/apiploy) or similar to
-   import the proxy into an Edge organization, and then deploy the proxy .
-
-6. Use a client to generate and send http requests with appropriate HTTP
-Signatures, to the proxy.
-
-
-
-Dependencies
-------------------
+## Dependencies
 
 - Apigee Edge expressions v1.0
 - Apigee Edge message-flow v1.0
 - Apache commons lang 2.6
 - Apache commons codec 1.7
-- Apache commons httpclient 4.3.5
 
-These jars must be available on the classpath for the compile to
-succeed. The build.sh script should download all of these files for
-you, automatically. You could also create a Gradle or maven pom file as
-well.
-
-If you want to download them manually:
-
-  The first 2 jars are available in Apigee Edge. The first two are
-  produced by Apigee; contact Apigee support to obtain these jars to allow
-  the compile, or get them here:
-  https://github.com/apigee/api-platform-samples/tree/master/doc-samples/java-cookbook/lib
-
-  The Apache jars are also all available in Apigee Edge at runtime. To download them for compile time, you can get them from maven.org.
+The maven build (with the pom.xml file) will obtain the latter two.
 
 
+## Using the callout
 
-Notes
-------
+You must use the callout in two phases: parse and verify. The parse phase extracts the elements from the signature header. The verify phase actually verifies the extracted signature. These are separate phases to allow the API proxy to use the output of the parse phase, specifically the keyId, to retrieve a key from whatever store is appropriate.  Only after the parse can the proxy know the key to use for verification. So the logic works like this:
 
-There is one callout class, com.apigee.callout.httpsignature.SignatureParserCallout ,
-which parses an HTTP Signature .  There is another, com.apigee.callout.httpsignature.SignatureVerifierCallout , that verifies the HTTP signature.
+1. parse the signature header to determine the keyId
+2. retrieve the key
+3. verify the signature with the retrieved key
+
+Therefore you must Include TWO Java callout policies in your
+apiproxy/resources/policies directory. The first does the parsing, the second
+performs the signature validation and verification.
+
+The first policy should be configured like this:
+```xml
+  <JavaCallout name='Java-ParseHttpSignature'>
+    <Properties/>
+    <ClassName>com.google.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
+    <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
+  </JavaCallout>
+```
+
+
+The second should look something like this:
+```xml
+  <JavaCallout name='Java-VerifyHttpSignature1'>
+    <Properties>
+      <Property name='public-key'>{verifyapikey.VerifyApiKey-1.public_key}</Property>
+      <Property name='headers'>date (request-target)</Property>
+    </Properties>
+    <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
+    <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
+  </JavaCallout>
+```
+
+After including those policies in your proxy, use the Edge UI, or a command-line
+tool like [importAndDeploy.js](https://github.com/DinoChiesa/apigee-edge-js/blob/master/examples/importAndDeploy.js)
+or similar to import the proxy into an Edge organization, and then deploy the
+proxy.
+
+Then, use a client to generate and send http requests with appropriate HTTP
+Signatures, to the proxy.
+
+
+
+## Notes
+
+There is one callout class, com.google.apigee.callout.httpsignature.SignatureParserCallout ,
+which parses an HTTP Signature .  There is another, com.google.apigee.callout.httpsignature.SignatureVerifierCallout , that verifies the HTTP signature.
 
 The reason this is done in two separate steps is that sometimes the configuration of the Verification step requires data which can be retrieved only after the signature has been parsed. Doing the parse and verify in one callout would prevent retrieval of secvret keys or public keys from the developer app entity, for example.
 
 You must configure each callout with Property elements in the policy
 configuration.
 
-Examples for how to parse and verify an HTTP signature follow.
+Examples for how to parse and verify an HTTP signature using HMAC-sha256 follow.
 
-To get this all to work, you will need the API Proxy to be created. You also need an API Product, which must contain the API Proxy.  And you also need a Developer app, with a client_id and client_secret (aka consumer id and consumer secret).
+To get the signature example to work, you will need the API Proxy to be created. You also need an API Product, which must contain the API Proxy.  And you also need a Developer app, with a client_id and client_secret (aka consumer id and consumer secret).
 
 In the examples that follow, the consumer secret will be used as the
 shared secret for HMAC encryption. This is not required; in fact you can
@@ -113,23 +131,18 @@ We want to parse the signature because the keyId contained within the signature 
 
 ```xml
 <JavaCallout name='Java-ParseHttpSignature'>
-  <Properties>
-    <Property name='varprefix'>parse</Property>
-  </Properties>
-  <ClassName>com.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
-  <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
+  <ClassName>com.google.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
+  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
 </JavaCallout>
 ```
 
-The policy uses the varprefix to name the context variables which it
-sets. It is optional; if you don't set it, it gets the value of
-"httpsig". The result of the parse step is to extract the components of
+The result of the parse step is to extract the components of
 the signature as passed in, and set context variables in Edge, like so:
 
-- {prefix}_algorithm
-- {prefix}_keyId
-- {prefix}_signature
-- {prefix}_headers
+- httpsig_algorithm
+- httpsig_keyId
+- httpsig_signature
+- httpsig_headers
 
 These context variables are then available to subsequent logic steps in
 the proxy flow. This is useful if, for example, the keyId provides some
@@ -143,11 +156,10 @@ By default the Parse policy retrieves the signature from the Signature HTTP head
 ```xml
 <JavaCallout name='Java-ParseHttpSignature'>
   <Properties>
-    <Property name='varprefix'>parse</Property>
-    <Property name='fullsignature'>{flow.variable.containing.sig}</Property>
+    <Property name='fullsignature'>{context.variable.containing.sig}</Property>
   </Properties>
-  <ClassName>com.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
-  <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
+  <ClassName>com.google.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
+  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -163,12 +175,11 @@ The second Java callout class performs the verification:
 ```xml
 <JavaCallout name='Java-VerifyHttpSignature1'>
   <Properties>
-    <Property name='varprefix'>sig</Property>
     <Property name='algorithm'>rsa-sha256</Property>
     <Property name='public-key'>{verifyapikey.VerifyApiKey-1.public_key}</Property>
   </Properties>
-  <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
+  <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
+  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -178,10 +189,10 @@ The ClassName must be as shown.
 The policy uses the varprefix to name the variables which it sets.
 The verify callout sets at least these context variables:
 
-    <varprefix>_isValid - true/false, telling whether the
+    httpsig_isValid - true/false, telling whether the
             signature is valid and complies with the requirements (headers and algorithm).
 
-    <varprefix>_error - set only when there is an error, contains the exception.
+    httpsig_error - set only when there is an error, contains the exception.
 
 The callout also sets other context variables. Examine the Edge trace window at runtime for the full list.
 
@@ -219,8 +230,8 @@ The above configuration simply verifies that a signature is present. It does not
     <Property name='algorithm'>rsa-sha256</Property>
     <Property name='maxtimeskew'>120</Property>
   </Properties>
-  <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
+  <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
+  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -261,7 +272,6 @@ Parsing a signature.
 ```xml
 <JavaCallout name='Java-VerifyHttpSignature4'>
   <Properties>
-    <Property name='varprefix'>sig</Property>
     <Property name='public-key'>
       -----BEGIN PUBLIC KEY-----
       MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtxlohiBDbI/jejs5WLKe
@@ -276,8 +286,8 @@ Parsing a signature.
     <Property name='headers'>date (request-target)</Property>
     <Property name='algorithm'>rsa-sha256</Property>
   </Properties>
-  <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
+  <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
+  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -291,13 +301,12 @@ keys only, in either PKCS#8 or PKCS#1 format. Base64-encoded.
 ```xml
 <JavaCallout name='Java-VerifyHttpSignature'>
   <Properties>
-    <Property name='varprefix'>sig</Property>
     <Property name='pemfile'>publickey-1.pem</Property>
     <Property name='algorithm'>rsa-sha256</Property>
     <Property name='headers'>Date (request-target)</Property>
   </Properties>
-  <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
+  <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
+  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -328,14 +337,13 @@ the PEM into the configuration file itself.)
 ```xml
 <JavaCallout name='Java-VerifyHttpSignature'>
   <Properties>
-    <Property name='varprefix'>sig</Property>
     <Property name='fullsignature>{context.variable.here}</Property>
     <Property name='public-key'>{verifyapikey.VerifyApiKey-1.public_key}</Property>
     <Property name='algorithm'>rsa-sha256</Property>
     <Property name='headers'>Date (request-target)</Property>
   </Properties>
-  <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
+  <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
+  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -354,13 +362,12 @@ an example:
 ```xml
 <JavaCallout name='Java-VerifyHttpSignature'>
   <Properties>
-    <Property name='varprefix'>sig</Property>
     <Property name='secret-key'>{verifyapikey.VerifyApiKey-1.client_secret}</Property>
     <Property name='algorithm'>hmac-sha256</Property>
     <Property name='headers'>Date (request-target)</Property>
   </Properties>
-  <ClassName>com.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edgecallout-http-signature-verifier.jar</ResourceURL>
+  <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
+  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -374,7 +381,20 @@ signatures that use HMAC algorithms. Do not specify a secret-key
 property when verifying signatures with RSA algorithms.
 
 
-Bugs
---------
 
-There are no unit tests for this project.
+## Support
+
+This callout is open-source software, and is not a supported part of Apigee Edge.
+If you need assistance, you can try inquiring on
+[The Apigee Community Site](https://community.apigee.com).  There is no service-level
+guarantee for responses to inquiries regarding this callout.
+
+## License
+
+This material is copyright 2015,2016 Apigee Corporation, 2017-2018 Google LLC.
+and is licensed under the [Apache 2.0 License](LICENSE). This includes the Java
+code as well as the API Proxy configuration.
+
+## Known Bugs
+
+?? none

@@ -1,7 +1,8 @@
-package com.apigee.testng.tests;
+package com.google.apigee.testng.tests;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -15,12 +16,11 @@ import com.apigee.flow.execution.ExecutionContext;
 import com.apigee.flow.message.MessageContext;
 import com.apigee.flow.execution.ExecutionResult;
 
-import com.apigee.testng.support.NotImplementedException;
+import com.google.apigee.testng.support.NotImplementedException;
 
-import com.apigee.callout.httpsignature.SignatureVerifierCallout;
+import com.google.apigee.callout.httpsignature.SignatureParserCallout;
 
-
-public class TestHttpSigVerifyEdgeCallout {
+public class TestHttpSigParseEdgeCallout {
 
     MessageContext msgCtxt;
     ExecutionContext exeCtxt;
@@ -69,93 +69,11 @@ public class TestHttpSigVerifyEdgeCallout {
 
 
     @Test()
-    public void test1_Hmac_GoodSig_Property() {
+    public void test1_BadSig_Property() {
+        Map m = new HashMap();
+        m.put("fullsignature", "The quick brown fox...");
 
-        // set up
-        Map properties = new HashMap();
-        properties.put("fullsignature", "keyId=\"mykey\",algorithm=\"hmac-sha256\",headers=\"date\",signature=\"Suk6A0tJCR1FHRemruL2NtyaGz54sCn5ow1suRhe54E=\"");
-        properties.put("algorithm", "hmac-sha256");
-        properties.put("headers", "date");
-        properties.put("secret-key", "secret123");
-        properties.put("maxtimeskew","-1");
-
-        msgCtxt.setVariable("request.header.date", "Tue, 20 Oct 2015 16:55:05 PDT");
-        SignatureVerifierCallout callout = new SignatureVerifierCallout(properties);
-        ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
-
-        // retrieve output
-        String error = msgCtxt.getVariable("httpsig_error");
-        boolean isValid = msgCtxt.getVariable("httpsig_isValid");
-
-        // check result and output
-        Assert.assertEquals(result, ExecutionResult.SUCCESS);
-        Assert.assertEquals(error, null);
-        Assert.assertEquals(isValid, true);
-    }
-
-    @Test()
-    public void test2_Hmac_BadSig_Property() {
-
-        // set up
-        Map properties = new HashMap();
-        properties.put("fullsignature", "keyId=\"mykey\",algorithm=\"hmac-sha256\",headers=\"date\",signature=\"Suk6A0tJCR1FHRemruL2NtyaGz54sCn5ow1suRhe54E=\"");
-        properties.put("algorithm", "hmac-sha256");
-        properties.put("headers", "date");
-        properties.put("secret-key", "secret1234");
-        properties.put("maxtimeskew","-1");
-
-        msgCtxt.setVariable("request.header.date", "Tue, 20 Oct 2015 16:55:05 PDT");
-        SignatureVerifierCallout callout = new SignatureVerifierCallout(properties);
-        ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
-
-        // retrieve output
-        String error = msgCtxt.getVariable("httpsig_error");
-        boolean isValid = msgCtxt.getVariable("httpsig_isValid");
-
-        // check result and output
-        Assert.assertEquals(result, ExecutionResult.SUCCESS);
-        Assert.assertEquals(error, null);
-        Assert.assertEquals(isValid, false);
-    }
-
-    @Test()
-    public void test3_Hmac_BadSig_Property() {
-
-        // set up
-        Map properties = new HashMap();
-        properties.put("fullsignature", "keyId=\"mykey\",algorithm=\"hmac-sha256\",headers=\"date\",signature=\"Suk6A0tJCR1FHRemruL2NtyaGz54sCn5ow1suRhe54E=\"");
-        properties.put("algorithm", "hmac-sha256");
-        properties.put("headers", "date");
-        properties.put("secret-key", "secret123");
-        properties.put("maxtimeskew","-1");
-
-        msgCtxt.setVariable("request.header.date", "Tue, 20 Oct 2015 17:15:50 PDT");
-        SignatureVerifierCallout callout = new SignatureVerifierCallout(properties);
-        ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
-
-        // retrieve output
-        String error = msgCtxt.getVariable("httpsig_error");
-        boolean isValid = msgCtxt.getVariable("httpsig_isValid");
-
-        // check result and output
-        Assert.assertEquals(result, ExecutionResult.SUCCESS);
-        Assert.assertEquals(error, null);
-        Assert.assertEquals(isValid, false);
-    }
-
-
-
-    @Test()
-    public void test4_Fail_AlgorithmMismatch() {
-
-        // set up
-        Map properties = new HashMap();
-        properties.put("fullsignature", "keyId=\"mykey\",algorithm=\"rsa-sha256\",headers=\"(request-target) nonce date\",signature=\"udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI=\"");
-        properties.put("algorithm", "hmac-sha256");
-        properties.put("headers", "date");
-        properties.put("maxtimeskew","-1");
-
-        SignatureVerifierCallout callout = new SignatureVerifierCallout(properties);
+        SignatureParserCallout callout = new SignatureParserCallout(m);
         ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
 
         // retrieve output
@@ -163,28 +81,94 @@ public class TestHttpSigVerifyEdgeCallout {
 
         // check result and output
         Assert.assertEquals(result, ExecutionResult.ABORT);
-        Assert.assertEquals(error, "algorithm used in signature (rsa-sha256) is not as required (hmac-sha256)");
+        Assert.assertEquals(error, "the signature is malformed (The quick brown fox...)");
+    }
+
+    @Test()
+    public void test2_GoodSig_Property() {
+        Map properties = new HashMap();
+        properties.put("fullsignature", "keyId=\"test2_GoodSig_Property\",algorithm=\"hmac-sha256\",headers=\"(request-target) date\",signature=\"udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI=\"");
+        properties.put("algorithm", "hmac-sha256");
+        properties.put("headers", "date");
+        properties.put("maxtimeskew","-1");
+
+        // msgCtxt.setVariable("request.header.date", "Tue, 20 Oct 2015 16:55:05 PDT")
+        SignatureParserCallout callout = new SignatureParserCallout(properties);
+        ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+        // retrieve output
+        String error = msgCtxt.getVariable("httpsig_error");
+
+        // check result and output
+        Assert.assertEquals(result, ExecutionResult.SUCCESS);
+        Assert.assertEquals(error, null);
+    }
+
+    @Test()
+    public void test3_GoodSig_Header() {
+        Map properties = new HashMap();
+        properties.put("algorithm", "hmac-sha256");
+        properties.put("headers", "date");
+        properties.put("maxtimeskew","-1");
+
+        // msgCtxt.setVariable("request.header.date", "Tue, 20 Oct 2015 16:55:05 PDT")
+        ArrayList list = new ArrayList<String>();
+        list.add("keyId=\"test3_GoodSig_Header\"");
+        list.add("algorithm=\"hmac-sha256\"");
+        list.add("headers=\"(request-target) date\"");
+        list.add("signature=\"udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI=\"");
+        msgCtxt.setVariable("request.header.signature.values", list);
+
+        SignatureParserCallout callout = new SignatureParserCallout(properties);
+        ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+        // retrieve output
+        String error = msgCtxt.getVariable("httpsig_error");
+
+        // check result and output
+        //Assert.assertEquals(result, ExecutionResult.SUCCESS);
+        Assert.assertEquals(error, null, "error");
     }
 
 
-    // @Test()
-    // public void test1_NoKey() {
-    //
-    //     // set up
-    //     Map m = new HashMap();
-    //     m.put("string-to-sign", "The quick brown fox...");
-    //
-    //     HmacCreatorCallout callout = new HmacCreatorCallout(m);
-    //     ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
-    //
-    //     // retrieve output
-    //     String error = msgCtxt.getVariable("hmac.error");
-    //
-    //     // check result and output
-    //     Assert.assertEquals(result, ExecutionResult.ABORT);
-    //     Assert.assertEquals(error, "key is not specified or is empty.");
-    // }
-    //
+    @Test()
+    public void test4_BadHeader_Algorithm() {
+        Map properties = new HashMap();
+        properties.put("fullsignature", "keyId=\"test4_BadHeader_Algorithm\",algorithm=\"icecream\",headers=\"(request-target) date\",signature=\"udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI=\"");
+        properties.put("algorithm", "hmac-sha256");
+        properties.put("headers", "date");
+        properties.put("maxtimeskew","-1");
+
+        SignatureParserCallout callout = new SignatureParserCallout(properties);
+        ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+        // retrieve output
+        String error = msgCtxt.getVariable("httpsig_error");
+
+        // check result and output
+        Assert.assertEquals(result, ExecutionResult.ABORT);
+        Assert.assertEquals(error, "unsupported algorithm: icecream");
+    }
+
+    @Test()
+    public void test5_RSA_GoodHeader() {
+        Map properties = new HashMap();
+        properties.put("fullsignature", "keyId=\"test5_RSA_GoodHeader\",algorithm=\"rsa-sha256\",headers=\"(request-target) nonce date\",signature=\"udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI=\"");
+        properties.put("algorithm", "hmac-sha256");
+        properties.put("headers", "date");
+        properties.put("maxtimeskew","-1");
+
+        SignatureParserCallout callout = new SignatureParserCallout(properties);
+        ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+        // retrieve output
+        String error = msgCtxt.getVariable("httpsig_error");
+
+        // check result and output
+        Assert.assertEquals(result, ExecutionResult.SUCCESS);
+        Assert.assertEquals(error, null);
+    }
+
     // @Test()
     // public void test2_ValidConfig() {
     //

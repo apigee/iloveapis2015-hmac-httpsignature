@@ -1,38 +1,46 @@
 // HttpSignature.java
 // ------------------------------------------------------------------
 //
-// Author: Dino
-// Created Fri Aug 14 14:42:41 2015
+// Copyright 2015-2018 Google LLC.
 //
-// Last saved: <2015-October-20 16:19:38>
-// ------------------------------------------------------------------
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Copyright (c) 2015 Dino Chiesa
-// All rights reserved.
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
-// ------------------------------------------------------------------
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
-package com.apigee.callout.httpsignature;
+package com.google.apigee.callout.httpsignature;
 
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Collections;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
+import com.google.common.base.Splitter;
+import com.google.common.io.BaseEncoding;
 import java.net.URISyntaxException;
-
 import java.nio.charset.StandardCharsets;
-
 import java.security.PublicKey;
+import java.security.Signature;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.security.Signature;
-
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
 
 public class HttpSignature {
+    private static final Splitter spaceSplitter = Splitter.on(' ').trimResults();
+    private static final Splitter commaSplitter = Splitter.on(',').trimResults();
+    private static final Pattern signatureElementPattern = Pattern.compile("([a-zA-z]+)=\"([^\"]+)\"");
+
+    private Map<String, Object> props = new HashMap<String, Object>();
 
     // public static final Map<String, String> supportedRsaAlgorithms;
     // static {
@@ -44,20 +52,29 @@ public class HttpSignature {
     // }
 
     public static final Map<String, String> supportedAlgorithms;
+    public static final List<String> knownSignatureItems;
+
     static {
-        Map<String, String> a = new HashMap<String, String>();
-        a.put("rsa-sha1", "SHA1withRSA");
-        a.put("rsa-sha256", "SHA256withRSA");
-        a.put("rsa-sha512", "SHA512withRSA");
-        a.put("hmac-sha1", "HmacSHA1");
-        a.put("hmac-sha256", "HmacSHA256");
-        a.put("hmac-sha512", "HmacSHA512");
-        supportedAlgorithms = Collections.unmodifiableMap(a);
+        Map<String, String> map = new HashMap<String, String>();
+        map.put("rsa-sha1", "SHA1withRSA");
+        map.put("rsa-sha256", "SHA256withRSA");
+        map.put("rsa-sha512", "SHA512withRSA");
+        map.put("hmac-sha1", "HmacSHA1");
+        map.put("hmac-sha256", "HmacSHA256");
+        map.put("hmac-sha512", "HmacSHA512");
+        supportedAlgorithms = Collections.unmodifiableMap(map);
+
+        List<String> list = new ArrayList<String>();
+        list.add("keyId");
+        list.add("algorithm");
+        list.add("headers");
+        list.add("signature");
+        knownSignatureItems = Collections.unmodifiableList(list);
     }
 
-    public static final String[] knownSignatureItems = {
-        "keyId", "algorithm", "headers", "signature"
-    };
+    public HttpSignature(String s) throws IllegalStateException {
+        parseHttpSignatureHeader(s);
+    }
 
     public String getKeyId() { return (String) props.get("keyId"); }
     public void setKeyId(String value) { props.put("keyId", value); }
@@ -65,19 +82,17 @@ public class HttpSignature {
     public String getAlgorithm() { return (String) props.get("algorithm"); }
     public void setAlgorithm(String value) { props.put("algorithm", value); }
 
-    public String[] getHeaders() {
+    public List<String> getHeaders() {
         if (!props.containsKey("headers")) { return null; }
-        return (String[]) props.get("headers");
+        return (List<String>) props.get("headers");
     }
     public void setHeaders(String[] value) { props.put("headers", value); }
 
     public String getSignatureString() { return (String) props.get("signature"); }
     public byte[] getSignatureBytes() {
-        return Base64.decodeBase64((String) props.get("signature"));
+        return BaseEncoding .base64().decode((String) props.get("signature"));
     }
     public void setSignatureString(String value) { props.put("signature", value); }
-
-    private Map<String, Object> props = new HashMap<String, Object>();
 
 
     private boolean _isRsa = false;
@@ -114,8 +129,8 @@ public class HttpSignature {
             Mac hmac = Mac.getInstance(javaAlgoName);
             hmac.init(key);
 
-            result.computedSignature
-                = Base64.encodeBase64String(hmac.doFinal(result.signingBase.getBytes("UTF-8")));
+            result.computedSignature =
+                BaseEncoding.base64().encode( hmac.doFinal(result.signingBase.getBytes("UTF-8")) );
 
             String providedSignature = this.getSignatureString();
             result.isValid = result.computedSignature.equals(providedSignature);
@@ -124,20 +139,19 @@ public class HttpSignature {
     }
 
     public String getSigningBase(ReadOnlyHttpSigHeaderMap map) {
-        String[] headers = this.getHeaders();
+        List<String> headers = this.getHeaders();
         String sigBase = "";
         String path, v;
 
         if (headers == null) {
-            headers = new String[] { "date" };
+            headers = Collections.singletonList("date");
         }
 
-        for (int i=0; i < headers.length; i++) {
+        for (String header : headers) {
             if (!sigBase.equals("")) { sigBase += "\n";}
-            String h = headers[i];
-            v = map.getHeaderValue(h); // including special value
-            if (v==null || v.equals("")) v = "unknown header " + h;
-            sigBase += h + ": " + v;
+            v = map.getHeaderValue(header); // including special value
+            if (v==null || v.equals("")) v = "unknown header " + header;
+            sigBase += header + ": " + v;
         }
         return sigBase;
     }
@@ -145,7 +159,6 @@ public class HttpSignature {
 
     private void parseHttpSignatureHeader(String header)
         throws IllegalStateException, UnsupportedOperationException {
-        Pattern re2 = Pattern.compile("([a-zA-z]+)=\"([^\"]+)\"");
         int i;
         String key, value;
 
@@ -163,21 +176,21 @@ public class HttpSignature {
         // }
         // s = s.substring(10, publicKey.length());
 
-        String[] parts = StringUtils.split(header,",");
-        for(i=0; i< parts.length; i++) {
-            Matcher m = re2.matcher(parts[i]);
+        Iterable<String> parts = commaSplitter.split(header);
+        for(String part : parts) {
+            Matcher m = signatureElementPattern.matcher(part);
             if (!m.matches()) {
-                throw new IllegalStateException("the signature is malformed ("+parts[i]+")");
+                throw new IllegalStateException("the signature is malformed ("+part+")");
             }
 
             key = m.group(1);
             value = m.group(2);
 
-            if (ArrayUtils.indexOf(knownSignatureItems,key) < 0) {
+            if (knownSignatureItems.indexOf(key) < 0) {
                 throw new IllegalStateException("signature has unknown key ("+key+").");
             }
             if (key.equals("headers")) {
-                props.put(key, StringUtils.split(value," "));
+                props.put(key, spaceSplitter.splitToList(value));
             }
             else {
                 props.put(key, value);
@@ -185,19 +198,18 @@ public class HttpSignature {
         }
 
         // validate that we have all required keys
-        for(i=0; i< knownSignatureItems.length; i++) {
-            key = knownSignatureItems[i];
+        for(String elementName : knownSignatureItems) {
             // only the "headers" key is optional
-            if (!key.equals("headers")) {
-                if (!props.containsKey(key)) {
-                    throw new IllegalStateException("signature is missing key ("+key+").");
+            if (!elementName.equals("headers")) {
+                if (!props.containsKey(elementName)) {
+                    throw new IllegalStateException("signature is missing key ("+elementName+").");
                 }
-                value = (String) props.get(key);
+                value = (String) props.get(elementName);
                 if (value == null || value.equals("")) {
-                    throw new IllegalStateException("signature has empty value for key ("+key+").");
+                    throw new IllegalStateException("signature has empty value for key ("+elementName+").");
                 }
                 // for the algorithm, we do a further check on validity
-                if (key.equals("algorithm")) {
+                if (elementName.equals("algorithm")) {
                     if (!supportedAlgorithms.containsKey(value)) {
                         throw new UnsupportedOperationException("unsupported algorithm: " + value);
                     }
@@ -206,9 +218,5 @@ public class HttpSignature {
                 }
             }
         }
-    }
-
-    public HttpSignature(String s) throws IllegalStateException {
-        parseHttpSignatureHeader(s);
     }
 }

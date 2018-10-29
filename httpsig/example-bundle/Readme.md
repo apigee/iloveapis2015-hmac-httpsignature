@@ -1,20 +1,20 @@
 httpsig
 ==================
 
-This API proxy verifies an HTTP Signature.  It is a loopback proxy; it always returns 200.  It provides a message payload that indicates an error if the signature is invalid, or no error if the signature is valid. 
+This API proxy verifies an HTTP Signature.  It is a loopback proxy; it always returns 200.  It provides a message payload that indicates an error if the signature is invalid, or no error if the signature is valid.
 
 The proposed standard for the HTTP Signature is [here](http://tools.ietf.org/html/draft-cavage-http-signatures-05).
 
-Here's a summary of the spec: 
+Here's a summary of the spec:
 
 The client sends in a Signature header that contains:
-  keyid - identifying the key used by the client. The meaning is app dependent. 
+  keyid - identifying the key used by the client. The meaning is app dependent.
   algorithm - can be RSA-SHA (public/private key) or HMAC-SHA (with shared key)
   list of HTTP headers - optional; space delimited; these are included in the signing base
   a signature
 
 Each element is formed as key="value" and they are separated by commas. This must be passed in an HTTP header named "Signature".
-The resulting header might look like this: 
+The resulting header might look like this:
 
 ```
 Signature: keyId="Test",
@@ -25,14 +25,14 @@ signature="udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI="
 
 (line feeds have been added to the above for readability. In actuality, a signature will be a single line with no intervening whitepace after the commas)
 
-The actual signature is computed over a signing base which consists of a concatenation of lines, separated by a newline character. Each line is a lowercased header name, a colon, a space, and the header value. The order of the headers in the signing base is as specified in the list. The signing base is not transmitted to the server as part of the request. 
+The actual signature is computed over a signing base which consists of a concatenation of lines, separated by a newline character. Each line is a lowercased header name, a colon, a space, and the header value. The order of the headers in the signing base is as specified in the list. The signing base is not transmitted to the server as part of the request.
 
-In the list of headers, the value of (request-target) is treated specially: it implies a string containing the (lowercased) request method and the URL path+query, separated by a space. Therefore for the above authorization header, the signing base might be: 
+In the list of headers, the value of (request-target) is treated specially: it implies a string containing the (lowercased) request method and the URL path+query, separated by a space. Therefore for the above authorization header, the signing base might be:
 
 ```
 (request-target): get /happy?when=now\ndate: Fri, 17 Jul 2015 17:55:56 GMT
 ```
-Making a signed request from curl might look like this: 
+Making a signed request from curl might look like this:
 
 ```
 curl -i -X GET \
@@ -78,10 +78,10 @@ the spec.  There's a [companion client](../client)  for this proxy written in no
 that depends on the node http-signature modile.
 
 
-To aid in doing so, use the client application in the 
+To aid in doing so, use the client application in the
 
 
-## Resources: 
+## Resources:
 
 * /rsa-t1
 * /rsa-t2
@@ -94,7 +94,7 @@ To aid in doing so, use the client application in the
 * /hmac-t3
 * /hmac-t4
 
-You will invoke each resource with a request like: 
+You will invoke each resource with a request like:
 
 ```
   GET /httpsig/rsa-t1
@@ -105,13 +105,13 @@ You will invoke each resource with a request like:
 
 ```
 
-But, remember, to send the requests, you need to compute an http signature header. 
-To aid in doing so, use the client application in the [client sibling directory](../client) here. 
+But, remember, to send the requests, you need to compute an http signature header.
+To aid in doing so, use the client application in the [client sibling directory](../client) here.
 
 
 ## Notes:
 
-There is some setup required before you can use this API proxy. 
+There is some setup required before you can use this API proxy.
 
 1. This apiproxy must be included in an API Product. The proxy calls
   VerifyAPIKey using the keyId passed in the Signature header as the
@@ -119,8 +119,8 @@ There is some setup required before you can use this API proxy.
   developer app and uses it for verifying the signature.  For HMAC
   algorithms, the proxy uses the client_secret (aka consumer_secret) as
   the secret key.  For RSA algorithms, the proxy uses the custom
-  attribute named "public_key".  
-  
+  attribute named "public_key".
+
   This means you must configure a developer app, which has access to the
   API product. When you invoke the API with the node client, specify the
   client id and client secret that is provisioned for the developer app.
@@ -139,5 +139,3 @@ other language.
 
 * This proxy does not implement the WWW-Authenticate response with a
   configurable set of headers to sign.
-
-

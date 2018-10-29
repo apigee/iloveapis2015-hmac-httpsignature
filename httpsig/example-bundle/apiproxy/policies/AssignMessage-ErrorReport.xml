@@ -13,11 +13,10 @@
     </Headers>
   </Remove>
   <Set>
-    <Payload contentType='application/json' variablePrefix='%' variableSuffix='#'><![CDATA[
-{
-  "error" : "%httpsig_error#"
+    <Payload contentType='application/json'>{
+  "error" : "{httpsig_error}"
 }
-]]></Payload>
+</Payload>
     </Set>
   <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
   <AssignTo createNew='false' transport='http' type='response'></AssignTo>

@@ -1,4 +1,4 @@
-package com.apigee.callout.httpsignature;
+package com.google.apigee.callout.httpsignature;
 
 import java.security.PublicKey;
 

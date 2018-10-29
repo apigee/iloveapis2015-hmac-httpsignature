@@ -4,11 +4,10 @@
   <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
   <FaultResponse>
     <Set>
-      <Payload contentType='application/json'
-               variablePrefix='%' variableSuffix='#'><![CDATA[{
+      <Payload contentType='application/json'>{
   "error" : "re-used nonce."
 }
-]]></Payload>
+</Payload>
       <StatusCode>401</StatusCode>
       <ReasonPhrase>Unauthorized</ReasonPhrase>
     </Set>

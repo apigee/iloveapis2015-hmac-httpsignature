@@ -3,70 +3,68 @@
 // A callout for Apigee Edge that verifies an HTTP Signature.
 // See http://tools.ietf.org/html/draft-cavage-http-signatures-04 .
 //
-// Thursday, 20 August 2015, 09:45
 //
+// Copyright 2015-2018 Google LLC.
 //
-// This software is licensed under the MIT License (MIT)
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// Copyright (c) 2015 by Dino Chiesa, Apigee Corporation
+//     https://www.apache.org/licenses/LICENSE-2.0
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 
-package com.apigee.callout.httpsignature;
+package com.google.apigee.callout.httpsignature;
 
 import com.apigee.flow.execution.ExecutionContext;
 import com.apigee.flow.execution.ExecutionResult;
 import com.apigee.flow.execution.IOIntensive;
 import com.apigee.flow.execution.spi.Execution;
-import com.apigee.flow.message.MessageContext;
 import com.apigee.flow.message.Message;
-
-import java.io.InputStream;
+import com.apigee.flow.message.MessageContext;
+import com.google.apigee.callout.httpsignature.HttpSignature;
+import com.google.apigee.callout.httpsignature.KeyUtils.KeyParseException;
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.cert.CertificateException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
-import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
-
-// for RSA
-import java.security.spec.X509EncodedKeySpec;
-import java.security.spec.InvalidKeySpecException;
-import java.security.PublicKey;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.http.client.utils.DateUtils;
-
-
-import com.apigee.callout.httpsignature.HttpSignature;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @IOIntensive
 public class SignatureVerifierCallout implements Execution {
+    private static final Joiner spaceJoiner = Joiner.on(' ');
+    private static final Splitter spaceSplitter = Splitter.on(' ').trimResults();
+    public static final DateTimeFormatter DATE_FORMATTERS[] = {
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX"),
+        DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss zzz"),
+        DateTimeFormatter.ofPattern("EEEE, dd-MMM-yy HH:mm:ss zzz"),
+        DateTimeFormatter.ofPattern("EEE MMM d HH:mm:ss yyyy"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+    };
+
+    private static final String _prefix = "httpsig_";
 
     private Map properties; // read-only
 
@@ -74,6 +72,10 @@ public class SignatureVerifierCallout implements Execution {
         this.properties = properties;
     }
 
+    private static String varName(String s) {
+        return _prefix + s;
+    }
+    
     private String getRequiredAlgorithm(MessageContext msgCtxt) throws Exception {
         String algorithm = (String) this.properties.get("algorithm");
         if (algorithm == null) {
@@ -104,7 +106,7 @@ public class SignatureVerifierCallout implements Execution {
         return Long.parseLong(timeskew, 10);
     }
 
-    private String[] getRequiredHeaders(MessageContext msgCtxt)
+    private Iterable<String> getRequiredHeaders(MessageContext msgCtxt)
         /* throws Exception */ {
         String headers = (String) this.properties.get("headers");
         if (headers == null) { return null; }
@@ -117,18 +119,30 @@ public class SignatureVerifierCallout implements Execution {
             //throw new IllegalStateException("headers resolves to an empty string");
             return null;
         }
-        return StringUtils.split(headers," ");
+        return spaceSplitter.split(headers);
     }
 
-    private long getRequestSecondsSinceEpoch(MessageContext msgCtxt)
-        /* throws DateParseException */ {
+    private static ZonedDateTime parseDate(String dateString) {
+        if (dateString == null) return null;
+        for (DateTimeFormatter formatter : DATE_FORMATTERS) {
+            try {
+                return ZonedDateTime.parse(dateString,formatter);
+            } catch (DateTimeParseException ex) {
+            }
+        }
+        return null;
+    }
+
+    private long getRequestSecondsSinceEpoch(MessageContext msgCtxt) {
         String dateString = msgCtxt.getVariable("request.header.date"); // Date header
-        if (dateString == null) { return (new Date()).getTime()/1000L; } // now
-        dateString = dateString.trim();
-        if (dateString.equals("")) { return (new Date()).getTime()/1000L; } // now
-        Date d1 = DateUtils.parseDate(dateString);
-        long unixTime = d1.getTime() / 1000;
-        return unixTime; // seconds since epoch
+        ZonedDateTime d1 = ZonedDateTime.now();
+        if (dateString != null) {
+            dateString = dateString.trim();
+            if (!dateString.equals("")) {
+              d1 = parseDate(dateString);
+            }
+        }
+        return d1.toEpochSecond(); 
     }
 
     private String getMultivaluedHeader(MessageContext msgCtxt, String header) {
@@ -193,8 +207,6 @@ public class SignatureVerifierCallout implements Execution {
         return in;
     }
 
-
-
     // If the value of a property value begins and ends with curlies,
     // and has no intervening spaces, eg, {apiproxy.name}, then
     // "resolve" the value by de-referencing the context variable whose
@@ -233,7 +245,8 @@ public class SignatureVerifierCallout implements Execution {
             throws IOException,
                    NoSuchAlgorithmException,
                    InvalidKeySpecException,
-                   CertificateException
+                   CertificateException,
+                   KeyParseException
         {
             String publicKeyString = (String) properties.get("public-key");
 
@@ -249,11 +262,12 @@ public class SignatureVerifierCallout implements Execution {
                 if (publicKeyString==null || publicKeyString.equals("")) {
                     throw new IllegalStateException("public-key variable resolves to empty; invalid when algorithm is RS*");
                 }
-                PublicKey key = KeyUtils.publicKeyStringToPublicKey(publicKeyString);
-                if (key==null) {
-                    throw new InvalidKeySpecException("must be PKCS#1 or PKCS#8");
+                try {
+                    return KeyUtils.decodePublicKey(publicKeyString);
                 }
-                return key;
+                catch (KeyParseException ex) {
+                    throw new InvalidKeySpecException("must be PKCS#1 or PKCS#8");                    
+                }
             }
 
             // // Try "modulus" + "exponent"
@@ -315,9 +329,7 @@ public class SignatureVerifierCallout implements Execution {
             }
             return key;
         }
-
     }
-
 
     private class EdgeHeaderProvider implements ReadOnlyHttpSigHeaderMap {
         MessageContext c;
@@ -357,12 +369,10 @@ public class SignatureVerifierCallout implements Execution {
     public ExecutionResult execute(MessageContext msgCtxt,
                                    ExecutionContext exeCtxt) {
         String varName;
-        String varprefix = "httpsig";
         ExecutionResult result = ExecutionResult.ABORT;
         Boolean isValid = false;
         try {
-            varName = varprefix + "_error";
-            msgCtxt.setVariable(varName, null);
+            msgCtxt.setVariable(varName("error"), null);
 
             // 1. retrieve and parse the full signature header payload
             HttpSignature sigObject = getFullSignature(msgCtxt);
@@ -372,8 +382,7 @@ public class SignatureVerifierCallout implements Execution {
             String actualAlgorithm = sigObject.getAlgorithm();
             String requiredAlgorithm = getRequiredAlgorithm(msgCtxt);
 
-            varName = varprefix + "_requiredAlgorithm";
-            msgCtxt.setVariable(varName, requiredAlgorithm);
+            msgCtxt.setVariable(varName("requiredAlgorithm"), requiredAlgorithm);
             if (!HttpSignature.supportedAlgorithms.containsKey(requiredAlgorithm)) {
                 throw new Exception("unsupported algorithm: " + requiredAlgorithm);
             }
@@ -384,19 +393,18 @@ public class SignatureVerifierCallout implements Execution {
 
             // 3. if there are any headers that are configured to be required,
             // check that they are all present in the sig.
-            String[] requiredHeaders = getRequiredHeaders(msgCtxt);
+            Iterable<String> requiredHeaders = getRequiredHeaders(msgCtxt);
             if (requiredHeaders != null) {
-                varName = varprefix + "_requiredHeaders";
-                msgCtxt.setVariable(varName, StringUtils.join(requiredHeaders," "));
-                String[] actualHeaders = sigObject.getHeaders();
-                int i;
-                for (i=0; i < actualHeaders.length; i++) {
-                    actualHeaders[i] = actualHeaders[i].toLowerCase();
-                }
-                for (i=0; i < requiredHeaders.length; i++) {
-                    String h = requiredHeaders[i].toLowerCase();
-                    if (ArrayUtils.indexOf(actualHeaders,h) < 0) {
-                        throw new Exception("signature is missing required header ("+h+").");
+                msgCtxt.setVariable(varName("requiredHeaders"), spaceJoiner.join(requiredHeaders));
+                List<String> actualHeaders = sigObject.getHeaders()
+                    .stream()
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toList());
+
+                for (String header : requiredHeaders) {
+                    header = header.toLowerCase();
+                    if (actualHeaders.indexOf(header) < 0) {
+                        throw new Exception("signature is missing required header ("+header+").");
                     }
                 }
             }
@@ -405,10 +413,9 @@ public class SignatureVerifierCallout implements Execution {
             long maxTimeSkew = getMaxTimeSkew(msgCtxt);
             if (maxTimeSkew > 0L) {
                 long t1 = getRequestSecondsSinceEpoch(msgCtxt);
-                long t2 = (new Date()).getTime() / 1000; // seconds since epoch
+                long t2 = ZonedDateTime.now().toEpochSecond();
                 long diff = Math.abs(t2 - t1);
-                varName = varprefix + "_timeskew";
-                msgCtxt.setVariable(varName, Long.toString(diff));
+                msgCtxt.setVariable(varName("timeskew"), Long.toString(diff));
                 if (diff > maxTimeSkew) {
                     // fail.
                     throw new Exception("date header exceeds max time skew ("+diff+">" + maxTimeSkew + ").");
@@ -420,22 +427,19 @@ public class SignatureVerifierCallout implements Execution {
             KeyProvider kp = new KeyProviderImpl(msgCtxt);
             SigVerificationResult verification = sigObject.verify(actualAlgorithm, hp, kp);
             isValid = verification.isValid;
-            varName = varprefix + "_signingBase";
-            msgCtxt.setVariable(varName, verification.signingBase.replace('\n','|'));
+            msgCtxt.setVariable(varName("signingBase"), verification.signingBase.replace('\n','|'));
 
             result = ExecutionResult.SUCCESS;
         }
         catch (Exception e) {
-            //e.printStackTrace();
-            varName = varprefix + "_error";
-            msgCtxt.setVariable(varName, e.getMessage());
-            varName = varprefix + "_stacktrace";
-            msgCtxt.setVariable(varName, ExceptionUtils.getStackTrace(e));
+            //System.out.printf(Throwables.getStackTraceAsString(e));
+
+            msgCtxt.setVariable(varName("error"), e.getMessage());
+            msgCtxt.setVariable(varName("stacktrace"), Throwables.getStackTraceAsString(e));
             result = ExecutionResult.ABORT;
         }
 
-        varName = varprefix + "_isValid";
-        msgCtxt.setVariable(varName, isValid);
+        msgCtxt.setVariable(varName("isValid"), isValid);
         return result;
     }
 }

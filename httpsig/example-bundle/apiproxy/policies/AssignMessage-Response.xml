@@ -13,26 +13,25 @@
     </Headers>
   </Remove>
   <Set>
-    <Payload contentType='application/json' variablePrefix='%' variableSuffix='#'><![CDATA[
-{
-  "app.name" : "%developer.app.name#",
-  "apiproduct.name" : "%apiproduct.name#",
+    <Payload contentType='application/json'>{
+  "app.name" : "{developer.app.name}",
+  "apiproduct.name" : "{apiproduct.name}",
   "signature" : {
-    "keyId" : "%httpsig_keyId#",
-    "algorithm" : "%httpsig_algorithm#",
-    "headers" : "%httpsig_headers#"
+    "keyId" : "{httpsig_keyId}",
+    "algorithm" : "{httpsig_algorithm}",
+    "headers" : "{httpsig_headers}"
   },
   "verification": {
-    "isValid" : "%httpsig_isValid#",
-    "requiredAlgorithm" : "%httpsig_requiredAlgorithm#",
-    "requiredHeaders" : "%httpsig_requiredHeaders#",
-    "timeskew" : "%httpsig_timeskew#",
-    "signingBase" : "%httpsig_signingBase#",
-    "computedSignature" : "%httpsig_computedSignature#",
-    "error" : "%httpsig_error#"
+    "isValid" : "{httpsig_isValid}",
+    "requiredAlgorithm" : "{httpsig_requiredAlgorithm}",
+    "requiredHeaders" : "{httpsig_requiredHeaders}",
+    "timeskew" : "{httpsig_timeskew}",
+    "signingBase" : "{httpsig_signingBase}",
+    "computedSignature" : "{httpsig_computedSignature}",
+    "error" : "{httpsig_error}"
   }
 }
-]]></Payload>
+</Payload>
     </Set>
   <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
   <AssignTo createNew='false' transport='http' type='response'></AssignTo>

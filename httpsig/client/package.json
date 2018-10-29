@@ -1,11 +1,11 @@
 {
-  "name": "signature-client",
+  "name": "node-signature-client",
   "description": "client that uses node-http-signature to generate a signed request",
-  "version": "0.0.1",
-  "license": "MIT",
-  "author": "Apigee, Inc",
+  "version": "1.0.1",
+  "license": "Apache-2.0",
+  "author": "Google, LLC",
   "contributors": [
-    "Dino Chiesa <dchiesa@apigee.com>"
+    "Dino Chiesa <dchiesa@google.com>"
   ],
   "keywords": [
     "https",
@@ -13,12 +13,12 @@
     "request"
   ],
   "engines": {
-    "node": ">=0.12"
+    "node": ">6.2.0"
   },
-  "main": "rsaClient.js",
+  "main": "httpSigClient.js",
   "dependencies": {
     "node-getopt": "0.2.3",
-    "node-http-signature": "git+https://github.com/DinoChiesa/node-http-signature.git",
-    "node-uuid": "^1.4.1"
+    "debug": "4.1.0",
+    "http-signature": "git+https://github.com/DinoChiesa/node-http-signature"
   }
 }
