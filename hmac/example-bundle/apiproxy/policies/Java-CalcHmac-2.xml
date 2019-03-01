@@ -9,5 +9,5 @@
     <Property name="debug">true</Property>
   </Properties>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://hmac-edge-callout-1.0.2.jar</ResourceURL>
+  <ResourceURL>java://apigee-hmac-edge-callout-1.0.3.jar</ResourceURL>
 </JavaCallout>

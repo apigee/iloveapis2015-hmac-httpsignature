@@ -3,7 +3,6 @@
   <HTTPProxyConnection>
     <BasePath>/hmac</BasePath>
     <Properties/>
-    <VirtualHost>default</VirtualHost>
     <VirtualHost>secure</VirtualHost>
   </HTTPProxyConnection>
 

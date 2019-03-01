@@ -5,17 +5,20 @@ import com.apigee.flow.execution.ExecutionResult;
 import com.apigee.flow.execution.IOIntensive;
 import com.apigee.flow.execution.spi.Execution;
 import com.apigee.flow.message.MessageContext;
+import java.io.StringWriter;
+import java.io.PrintWriter;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import com.google.common.io.BaseEncoding;
-import com.google.common.base.Throwables;
+//import com.google.common.io.BaseEncoding;
+//import com.google.common.base.Throwables;
 
 @IOIntensive
 public class HmacCreatorCallout implements Execution {
@@ -27,6 +30,8 @@ public class HmacCreatorCallout implements Execution {
     private static final Pattern algShaPattern = Pattern.compile("^(SHA)-?(1|224|256|384|512)$", Pattern.CASE_INSENSITIVE);
     private static final String variableReferencePatternString = "(.*?)\\{([^\\{\\} ]+?)\\}(.*?)";
     private static final Pattern variableReferencePattern = Pattern.compile(variableReferencePatternString);
+private static final Base64.Encoder base64Encoder = Base64.getEncoder();
+private static final Base64.Encoder base64UrlEncoder = Base64.getUrlEncoder();
 
     private Map properties; // read-only
 
@@ -160,9 +165,9 @@ public class HmacCreatorCallout implements Execution {
             SecretKeySpec key = new SecretKeySpec(signingKey.getBytes(), javaizedAlg);
             hmac.init(key);
             byte[] hmacBytes = hmac.doFinal(stringToSign.getBytes("UTF-8"));
-            String sigHex = BaseEncoding.base16().encode(hmacBytes);
-            String sigB64 = BaseEncoding.base64().encode(hmacBytes);
-            String sigB64Url = BaseEncoding.base64Url().encode(hmacBytes);
+            String sigHex = HexEncoder.encodeToString(hmacBytes);
+            String sigB64 = base64Encoder.encodeToString(hmacBytes);
+            String sigB64Url = base64UrlEncoder.encodeToString(hmacBytes);
 
             if (debug) {
                 msgCtxt.setVariable(varName("key"), signingKey);
@@ -183,9 +188,32 @@ public class HmacCreatorCallout implements Execution {
         }
         catch (Exception e){
             msgCtxt.setVariable(varName("error"), e.getMessage());
-            msgCtxt.setVariable(varName("stacktrace"), Throwables.getStackTraceAsString(e));
+            msgCtxt.setVariable(varName("stacktrace"), getStackTraceAsString(e));
             return ExecutionResult.ABORT;
         }
         return ExecutionResult.SUCCESS;
+    }
+
+    private static String getStackTraceAsString(Throwable t) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        t.printStackTrace(pw);
+        return sw.toString();
+    }
+
+    public static class HexEncoder {
+        private static String byteToHex(byte num) {
+            char[] hexDigits = new char[2];
+            hexDigits[0] = Character.forDigit((num >> 4) & 0xF, 16);
+            hexDigits[1] = Character.forDigit((num & 0xF), 16);
+            return new String(hexDigits);
+        }
+        public static String encodeToString(byte[] byteArray) {
+            StringBuffer hexStringBuffer = new StringBuffer();
+            for (int i = 0; i < byteArray.length; i++) {
+                hexStringBuffer.append(byteToHex(byteArray[i]));
+            }
+            return hexStringBuffer.toString();
+        }
     }
 }

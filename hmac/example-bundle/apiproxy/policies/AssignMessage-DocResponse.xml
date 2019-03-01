@@ -1,10 +1,9 @@
 <AssignMessage name='AssignMessage-DocResponse'>
   <DisplayName>AssignMessage Doc Response</DisplayName>
-  <Description></Description>
   <IgnoreUnresolvedVariables>false</IgnoreUnresolvedVariables>
+  <Remove><Headers/></Remove>
   <Set>
-    <Payload contentType='application/json'
-             variablePrefix='%' variableSuffix='#'>{
+    <Payload contentType='application/json'>{
   "message" : "Documentation for this API Proxy.",
   "links": [
     { "payload" :

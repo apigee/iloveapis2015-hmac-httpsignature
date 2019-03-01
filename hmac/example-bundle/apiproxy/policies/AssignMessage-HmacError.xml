@@ -2,9 +2,8 @@
   <DisplayName>AssignMessage Response</DisplayName>
   <IgnoreUnresolvedVariables>false</IgnoreUnresolvedVariables>
   <Set>
-    <Payload contentType='text/plain'
-             variablePrefix='%' variableSuffix='#'>
-error: %hmac.error#
+    <Payload contentType='text/plain'>
+error: {hmac.error}
 
 </Payload>
     <StatusCode>400</StatusCode>

@@ -1,14 +1,5 @@
 <AssignMessage name='AssignMessage-CleanResponseHeaders'>
-  <Remove>
-    <Headers>
-      <Header name='Accept'/>
-      <Header name='user-agent'/>
-      <Header name='X-Powered-By'/>
-      <Header name='X-Forwarded-For'/>
-      <Header name='X-Forwarded-Port'/>
-      <Header name='X-Forwarded-Proto'/>
-    </Headers>
-  </Remove>
+  <Remove><Headers/></Remove>
   <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
   <AssignTo createNew='false' transport='http' type='response'></AssignTo>
 </AssignMessage>

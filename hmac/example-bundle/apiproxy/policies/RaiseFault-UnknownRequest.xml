@@ -1,15 +1,12 @@
 <RaiseFault name='RaiseFault-UnknownRequest'>
-  <DisplayName>RaiseFault-UnknownRequest</DisplayName>
-  <Description>Unknown Request</Description>
   <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
   <FaultResponse>
     <Set>
-      <Payload contentType='application/json'
-               variablePrefix='%' variableSuffix='#'><![CDATA[{
+      <Payload contentType='application/json'>{
   "error" : true,
   "message" : "that request was unknown"
 }
-]]></Payload>
+</Payload>
       <StatusCode>404</StatusCode>
       <ReasonPhrase>Not Found</ReasonPhrase>
     </Set>

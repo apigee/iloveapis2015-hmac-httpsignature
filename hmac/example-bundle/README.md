@@ -25,7 +25,7 @@ Generate an HMAC on a given payload using alg=sha-256, with key secret123:
 
 ```
 curl -i -X POST -d 'the quick brown fox...' \
-   "http://myorg-myenv.apigee.net/hmac/payload?alg=sha-256&key=secret123"
+   "https://$ORG-$ENV.apigee.net/hmac/payload?alg=sha-256&key=secret123"
 ```
 
 The response is plain text like this:
@@ -49,8 +49,8 @@ You can validate an hmac by specifying the hmac-base64 header and invoking a dif
 
 ```
 curl -i -X POST -d 'the quick brown fox...' \
-   -H hmac-base64 : v0HSYNrNSb4tCefIDwy1YUvOiZfHo3GZTar9YGpsTi8= \
-   "http://myorg-myenv.apigee.net/hmac/validate-payload?alg=sha-256&key=secret123"
+   -H "hmac-base64 : v0HSYNrNSb4tCefIDwy1YUvOiZfHo3GZTar9YGpsTi8=" \
+   "https://$ORG-$ENV.apigee.net/hmac/validate-payload?alg=sha-256&key=secret123"
 ```
 
 You will get a 400 error if the provided signature does not match what is calculated by the proxy.
@@ -64,7 +64,7 @@ This proxy also has an endpoint that will compute an HMAC on the concatenation o
 ```
 curl -i -X POST -d '' \
    -H "Date:`date -u +'%a, %d %b %Y %H:%M:%S GMT'`" \
-   "http://myorg-myenv.apigee.net/hmac/headers?alg=sha-256&key=secret123"
+   "https://$ORG-$ENV.apigee.net/hmac/headers?alg=sha-256&key=secret123"
 ```
 
 The incantation around the Date header just creates a date string that
@@ -89,7 +89,7 @@ Finally,
 you can get help on this demonstration API Proxy like this:
 
 ```
-    curl -i -X GET  http://myorg-myenv.apigee.net/hmac
+    curl -i -X GET  https://$ORG-$ENV.apigee.net/hmac
 ```
 
 ### Using Postman
@@ -111,8 +111,9 @@ Then, specify the URL location (https://www.getpostman.com/collections/4b8e201e4
 Usage Notes:
 ============
 
-There are two ways to use this callout: for verification and for HMAC
-creation.  Either way, it works the same: you will use the Java callout
-to perform HMAC calculation.  For verification, you'd then compare the
-result to the passed-in signature.  For signature creation, you'd send
-the resulting signature in a message to the backend.
+There are two ways to use this callout: for verification and for HMAC creation.
+Either way, it works the same: you will use the Java callout to perform HMAC
+calculation. For verification, you'd then compare the result to the passed-in
+signature; the callout does this for you automatically if you pass in the
+hmac-base64 property. For signature creation, you'd send the resulting
+signature in a message to the backend.
