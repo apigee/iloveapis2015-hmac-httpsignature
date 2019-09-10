@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.apigee.callout</groupId>
   <artifactId>apigee-hmac-edge-callout</artifactId>
-  <version>1.0.3</version>
+  <version>1.0.4</version>
   <name>HmacEdgeCallout</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>

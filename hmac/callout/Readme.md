@@ -19,7 +19,7 @@ You do not need to build the code to use this callout. But if you want to, you c
 
 2. build with maven:  `mvn clean package`
 
-3. copy target/hmac-edge-callout-1.0.2.jar to your apiproxy/resources/java directory
+3. copy target/apigee-hmac-edge-callout-1.0.4.jar to your apiproxy/resources/java directory
 
 4. be sure to include a Java callout policy in your
    apiproxy/resources/policies directory. It should look like
@@ -30,7 +30,7 @@ You do not need to build the code to use this callout. But if you want to, you c
       <DisplayName>Java HMAC Creator</DisplayName>
       <Properties>...</Properties>
       <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-      <ResourceURL>java://hmac-edge-callout-1.0.2.jar</ResourceURL>
+      <ResourceURL>java://apigee-hmac-edge-callout-1.0.4.jar</ResourceURL>
     </JavaCallout>
    ```
 
@@ -67,7 +67,7 @@ Configure it like so:
   </Properties>
   <FaultRules/>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://hmac-edge-callout-1.0.2.jar</ResourceURL>
+  <ResourceURL>java://apigee-hmac-edge-callout-1.0.4.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -105,7 +105,7 @@ several variables and static strings, like this:
   </Properties>
   <FaultRules/>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://hmac-edge-callout-1.0.2.jar</ResourceURL>
+  <ResourceURL>java://apigee-hmac-edge-callout-1.0.4.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -128,7 +128,7 @@ You can configure the policy to validate an hmac as well, by including the prope
   </Properties>
   <FaultRules/>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://hmac-edge-callout-1.0.2.jar</ResourceURL>
+  <ResourceURL>java://apigee-hmac-edge-callout-1.0.4.jar</ResourceURL>
 </JavaCallout>
 ```
 

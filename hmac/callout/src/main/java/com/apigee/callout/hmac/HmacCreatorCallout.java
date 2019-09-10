@@ -17,21 +17,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-//import com.google.common.io.BaseEncoding;
-//import com.google.common.base.Throwables;
 
 @IOIntensive
 public class HmacCreatorCallout implements Execution {
     private static final String varnamePrefix = "hmac.";
     private static final String defaultAlgorithm = "SHA-256";
     private static final String TRUE = "true";
-    //private static Pattern algPattern = Pattern.compile("^(?:(SHA)-?(1|224|256|384|512))|(?:(MD)-?(5))$", Pattern.CASE_INSENSITIVE);
     private static final Pattern algMd5Pattern = Pattern.compile("^(MD)-?(5)$", Pattern.CASE_INSENSITIVE);
     private static final Pattern algShaPattern = Pattern.compile("^(SHA)-?(1|224|256|384|512)$", Pattern.CASE_INSENSITIVE);
     private static final String variableReferencePatternString = "(.*?)\\{([^\\{\\} ]+?)\\}(.*?)";
     private static final Pattern variableReferencePattern = Pattern.compile(variableReferencePatternString);
-private static final Base64.Encoder base64Encoder = Base64.getEncoder();
-private static final Base64.Encoder base64UrlEncoder = Base64.getUrlEncoder();
+    private static final Base64.Encoder base64Encoder = Base64.getEncoder();
+    //private static final Base64.Encoder base64UrlEncoder = Base64.getUrlEncoder();
 
     private Map properties; // read-only
 
@@ -130,7 +127,6 @@ private static final Base64.Encoder base64UrlEncoder = Base64.getUrlEncoder();
                 throw new IllegalStateException("the algorithm name (" + alg + ") is not recognized");
             }
         }
-
         String stdName = m.group(1).toUpperCase() + m.group(2);
         return "Hmac" + stdName;
     }
@@ -167,7 +163,7 @@ private static final Base64.Encoder base64UrlEncoder = Base64.getUrlEncoder();
             byte[] hmacBytes = hmac.doFinal(stringToSign.getBytes("UTF-8"));
             String sigHex = HexEncoder.encodeToString(hmacBytes);
             String sigB64 = base64Encoder.encodeToString(hmacBytes);
-            String sigB64Url = base64UrlEncoder.encodeToString(hmacBytes);
+            String sigB64Url = sigB64.replaceAll("\\+","-").replaceAll("\\/","_").replaceAll("=","");
 
             if (debug) {
                 msgCtxt.setVariable(varName("key"), signingKey);

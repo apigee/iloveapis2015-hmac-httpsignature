@@ -7,5 +7,5 @@
     <Property name="hmac-base64">{request.header.hmac-base64}</Property>
   </Properties>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://apigee-hmac-edge-callout-1.0.3.jar</ResourceURL>
+  <ResourceURL>java://apigee-hmac-edge-callout-1.0.4.jar</ResourceURL>
 </JavaCallout>
