@@ -2,7 +2,7 @@
 # -*- mode:shell-script; coding:utf-8; -*-
 #
 # Created: <Wed Oct 21 16:58:12 2015>
-# Last Updated: <2018-February-26 16:12:54>
+# Last Updated: <2020-March-13 08:55:50>
 #
 
 payload="Four score and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal."
@@ -47,38 +47,38 @@ done
 
 echo
 if [ "X$key" = "X" ]; then
-  echo "Specify an API key with the -k option" 
+  echo "Specify an API key with the -k option"
   echo
   usage
   exit 1
-fi 
+fi
 
 if [ "X$secret" = "X" -a "X$hmac_base64" = "X" ]; then
-  echo "Specify either an API secret with the -s option, or an hmac with the -h option" 
+  echo "Specify either an API secret with the -s option, or an hmac with the -h option"
   echo
   usage
   exit 1
-fi 
+fi
 
 if [ "X$orgname" = "X" ]; then
-  echo "Specify an organization with the -o option" 
+  echo "Specify an organization with the -o option"
   echo
   usage
   exit 1
-fi 
+fi
 if [ "X$envname" = "X" ]; then
-  echo "Specify an environment with the -e option" 
+  echo "Specify an environment with the -e option"
   echo
   usage
   exit 1
-fi 
+fi
 
 
 if [ "X$hmac_base64" = "X" ]; then
   hmac_base64=`echo -n "$payload" | openssl dgst -sha256 -binary -hmac "${secret}" | openssl enc -base64`
 fi
 
-endpoint=http://${orgname}-${envname}.apigee.net/hmac/with-apikey
+endpoint=https://${orgname}-${envname}.apigee.net/hmac/with-apikey
 
 
 echo curl -i -X POST \\
@@ -92,5 +92,3 @@ curl -i -X POST \
   -H "apikey: $key" \
   -H "hmac-base64: $hmac_base64" \
   $endpoint
-
-
