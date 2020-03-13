@@ -6,7 +6,7 @@
 # A bash script for provisioning an API Product and a developer app on
 # an organization in the Apigee Edge Gateway.
 #
-# Last saved: <2015-October-21 17:03:59>
+# Last saved: <2020-March-13 08:55:23>
 #
 
 verbosity=2
@@ -120,7 +120,7 @@ function choose_credentials() {
   local creds
 
   echo
-  echo -n "  Admin creds for ${mgmtserver}? (user:password) :: " 
+  echo -n "  Admin creds for ${mgmtserver}? (user:password) :: "
   read -s creds
 
   echo
@@ -154,7 +154,7 @@ function choose_org() {
   while [ $all_done -ne 1 ]; do
       echo
       read -p "  Which org? " orgname
-      check_org 
+      check_org
       if [ ${check_org} -ne 0 ]; then
         echo cannot read that org with the given creds.
         echo
@@ -239,7 +239,7 @@ function clear_env_state() {
   echo "  check for developers like ${apiname}..."
   MYCURL -X GET ${mgmtserver}/v1/o/${orgname}/developers
   if [ ${CURL_RC} -ne 200 ]; then
-    echo 
+    echo
     echoerror "Cannot retrieve developers from that org..."
     exit 1
   fi
@@ -257,14 +257,14 @@ function clear_env_state() {
         echo "  delete the app ${app}..."
         MYCURL -X DELETE "${mgmtserver}/v1/o/${orgname}/developers/${dev}/apps/${app}"
         ## ignore errors
-      done       
+      done
 
       echo "  delete the developer $dev..."
       MYCURL -X DELETE "${mgmtserver}/v1/o/${orgname}/developers/${dev}"
       if [ ${CURL_RC} -ne 200 ]; then
-        echo 
+        echo
         echoerror "  could not delete that developer (${dev})"
-        echo 
+        echo
         exit 1
       fi
     fi
@@ -273,7 +273,7 @@ function clear_env_state() {
   echo "  check for api products like ${apiname}..."
   MYCURL -X GET ${mgmtserver}/v1/o/${orgname}/apiproducts
   if [ ${CURL_RC} -ne 200 ]; then
-    echo 
+    echo
     echoerror "Cannot retrieve apiproducts from that org..."
     exit 1
   fi
@@ -286,9 +286,9 @@ function clear_env_state() {
        echo "  found a matching product...deleting it."
        MYCURL -X DELETE ${mgmtserver}/v1/o/${orgname}/apiproducts/${prod}
        if [ ${CURL_RC} -ne 200 ]; then
-         echo 
+         echo
          echoerror "  could not delete that product (${prod})"
-         echo 
+         echo
          exit 1
        fi
     fi
@@ -325,8 +325,8 @@ function clear_env_state() {
         MYCURL -X DELETE ${mgmtserver}/v1/o/${orgname}/apis/${apiname}
         if [ ${CURL_RC} -ne 200 ]; then
           echo "failed to delete that API"
-        fi 
-    fi 
+        fi
+    fi
 
   fi
 
@@ -335,9 +335,9 @@ function clear_env_state() {
 
 
 function deploy_new_bundle() {
-  if [ ! -d "apiproxy/apiproxy" ] ; then 
+  if [ ! -d "example-bundle/apiproxy" ] ; then
      echo cannot find the apiproxy directory.
-     echo re-run this command from the client directory. 
+     echo re-run this command from the hmac directory.
      echo
      exit 1
   fi
@@ -351,7 +351,7 @@ function deploy_new_bundle() {
 
   echo "  produce the bundle..."
   cd apiproxy
-  zip -r "../${apiname}.zip" apiproxy  -x "*/*.*~" -x "*/Icon*" -x "*/#*.*#" -x "*/node_modules/*"
+  zip -r "../${apiname}.zip" example-bundle  -x "*/*.*~" -x "*/Icon*" -x "*/#*.*#" -x "*/node_modules/*"
   cd ..
   echo
 
@@ -447,7 +447,7 @@ function create_new_developer() {
     "userName" : "'${shortdevname}'",
     "organizationName" : "'${orgname}'",
     "status" : "active"
-  }' 
+  }'
   if [ ${CURL_RC} -ne 201 ]; then
     echo
     echoerror "  failed creating a new developer."
@@ -476,7 +476,7 @@ function create_new_app() {
     "callbackUrl" : "thisisnotused://www.apigee.com",
     "name" : "'${appname}'",
     "keyExpiresIn" : "100000000"
-  }' 
+  }'
 
   if [ ${CURL_RC} -ne 201 ]; then
     echo
@@ -493,7 +493,7 @@ function retrieve_app_keys() {
   echo "  retrieve the keys for that app..."
   sleep 2
   MYCURL -X GET \
-    ${mgmtserver}/v1/o/${orgname}/developers/${devname}/apps/${appname} 
+    ${mgmtserver}/v1/o/${orgname}/developers/${devname}/apps/${appname}
 
   if [ ${CURL_RC} -ne 200 ]; then
     echo
@@ -502,7 +502,7 @@ function retrieve_app_keys() {
     echo
     echo
     exit 1
-  fi  
+  fi
 
   array=(`cat ${CURL_OUT} | grep "consumerKey" | sed -E 's/[",:]//g'`)
   consumerkey=${array[1]}
@@ -511,7 +511,7 @@ function retrieve_app_keys() {
 
   echo "  consumer key: ${consumerkey}"
   echo "  consumer secret: ${consumersecret}"
-  echo 
+  echo
   sleep 2
 }
 
@@ -548,24 +548,24 @@ done
 echo
 if [ "X$mgmtserver" = "X" ]; then
   mgmtserver="$defaultmgmtserver"
-fi 
+fi
 
 echo
 if [ "X$credentials" = "X" ]; then
   choose_credentials
-fi 
+fi
 
 echo
 if [ "X$orgname" = "X" ]; then
   choose_org
 else
-  check_org 
+  check_org
   if [ ${check_org} -ne 0 ]; then
     echoerror "that org cannot be validated"
     CleanUp
     exit 1
   fi
-fi 
+fi
 
 ## reset everything related to this api
 clear_env_state
@@ -585,4 +585,3 @@ fi
 
 CleanUp
 exit 0
-
