@@ -256,21 +256,20 @@ The above configuration simply verifies that a signature is present. It does not
 </JavaCallout>
 ```
 
-The algorithm property is optional. If specified, this is the algorithm
+The `algorithm` property is optional. If specified, this is the algorithm
 that must be used on the inbound signature. Valid values here, when
 using public/private key encryption, are rsa-sha1, rsa-sha256, and
 rsa-sha512.
 
-The headers property is also optional. If specified, it must be a
+The `headers` property is also optional. If specified, it must be a
 space-delimited set of names. The policy enforces that the inbound
 signature includes AT LEAST those headers listed in the value, in any
 order. The inbound signature may include other headers in the signature
 beyond those required here. The list of headers should be
 space-delimited as shown here. If there is no headers property, then the
-policy does not enforce a specific set of headers to be contained in the
-signature. This is not recommended!
+policy defaults to a signature on the Date header. 
 
-The maxtimeskew property is optional. If specified, this is the maximum
+The `maxtimeskew` property is optional. If specified, this is the maximum
 difference in seconds that will be allowed between the time stamped on
 the request in the Date header, and the actual time on the proxy
 server. If this value is zero or less, no maximum time skew is
@@ -278,8 +277,8 @@ enforced. If the value is not present, it defaults to 60 seconds. In
 other words, a request with a Date header that represents a time of more
 than 60 seconds ago, or more than 60 seconds in the future, will be
 rejected. If the request has no Date header, then this skew is not
-enforced. The maxtimeskew is only useful when accompanied by a Property
-that indicates the Date header is required to be included in the
+enforced. The `maxtimeskew` property is useful only when the `headers`  property
+indicates the Date header is required to be included in the
 signature.
 
 The verify policy extracts the signature from the default location - the
