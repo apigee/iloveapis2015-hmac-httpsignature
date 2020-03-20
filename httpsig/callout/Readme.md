@@ -28,23 +28,37 @@ Signature: keyId="mykey",
 
 These are the elements of a signature:
 
-| element     | purpose |
-|-------------|------------------------------------------------|
-| keyId       | identify the key used to produce the signature |
-| algorithm   | the algorithm used to produce the sig. Supported mechanisms include hmac-sha256 and rsa-sha256.  |
-| headers     | the set of headers which has been signed. This element is optional, according to the spec.  |
-| signature   | the base64-encoded signature value.            |
+| element     | purpose                                                                                                          |
+|-------------|------------------------------------------------------------------------------------------------------------------|
+| keyId       | an identifier for the key used to produce the signature. This may allow the verifier to look up a verifying key. |
+| algorithm   | the algorithm used to produce the sig. Supported mechanisms include hmac-sha256 and rsa-sha256.                  |
+| headers     | the set of headers which has been signed. This element is optional, according to the spec.                       |
+| signature   | the base64-encoded signature value.                                                                              |
 
-Receivers of an HTTP request bearing a signature can lookup a key from the asserted keyId, and then verify the asserted signature on the set of headers. If the signature is valid, then the receiver can be assured the set of signed headers in the request have not been modified in transit.
+Receivers of an HTTP request bearing a signature can lookup a verifying key from the
+asserted keyId. This verifying key may be a symmetric key, if the algorithm is
+hmac-sha256, or it may be a public key, if the algorithm is rsa-sha256.  With
+the verifying key, the verifying party can verify the asserted signature on the set of headers. If
+the signature is valid, then the receiver can be assured the set of signed
+headers in the request have not been modified in transit.
 
-There is a "special" header name "(request-target)" - this represents the verb and URL path + query of the request.
-Applications can use the Digest header (coupled with a following HTTP digest check) to verify the integrity of the payload of the request.
+There is a "special" header name `(request-target)` - this represents the verb
+and URL path + query of the request.  Applications can use the Digest header
+(coupled with a following HTTP digest check) to verify the integrity of the
+payload of the request.
 
-
+In addition to simply verifying the mathematical validity of the signature, the
+verifying party will also want to check that inbound signatures include
+particular headers. For example, `Date`, or `(request-target)`, or `http-digest`
+or some combination of those and others. A signature on a set of headers that
+does not include the `date` header doesn't protect against replays. A signature
+on a set of headers that does not include `(request-target)`, does not protect
+against MiTM interception attacks.
 
 ## Using the callout
 
-You do not need to build the code to use this callout. But if you want to, you can do so.
+You do not need to build the code to use this callout. But if you want to, you
+can do so. Instructions are at the bottom of this readme. 
 
 You must use the callout in two phases: parse and verify. The parse phase
 extracts the elements from the signature header. The verify phase actually
@@ -57,7 +71,8 @@ know the key to use for verification. So the logic works like this:
 2. retrieve the key
 3. verify the signature with the retrieved key
 
-Therefore you must Include TWO Java callout policies in your
+Therefore, in the general case, in which different clients will use different
+keys, you must include TWO distinct Java callout policies in your
 apiproxy/resources/policies directory. The first does the parsing, the second
 performs the signature validation and verification.
 
@@ -69,7 +84,6 @@ The first policy should be configured like this:
     <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
   </JavaCallout>
 ```
-
 
 The second should look something like this:
 ```xml
@@ -83,6 +97,9 @@ The second should look something like this:
   </JavaCallout>
 ```
 
+Between those two policies you will use a step that dereferences the keyId into
+some kind of key material, either a public key or a symmetric key. 
+
 After including those policies in your proxy, use the Edge UI, or a command-line
 tool like [importAndDeploy.js](https://github.com/DinoChiesa/apigee-edge-js/blob/master/examples/importAndDeploy.js)
 or similar to import the proxy into an Edge organization, and then deploy the
@@ -92,32 +109,45 @@ Then, use a client to generate and send http requests with appropriate HTTP
 Signatures, to the proxy.
 
 
-
 ## Notes
 
-There is one callout class, com.google.apigee.callout.httpsignature.SignatureParserCallout ,
-which parses an HTTP Signature .  There is another, com.google.apigee.callout.httpsignature.SignatureVerifierCallout , that verifies the HTTP signature.
+There are two classes in the callout jar: 
+* `com.google.apigee.callout.httpsignature.SignatureParserCallout` -  parses an HTTP Signature. 
+* `com.google.apigee.callout.httpsignature.SignatureVerifierCallout` - verifies an HTTP signature.
 
-The reason this is done in two separate steps is that sometimes the configuration of the Verification step requires data which can be retrieved only after the signature has been parsed. Doing the parse and verify in one callout would prevent retrieval of secvret keys or public keys from the developer app entity, for example.
+The reason this is done in two separate steps is that sometimes the
+configuration of the Verification step requires data which can be retrieved only
+after the signature has been parsed. Doing the parse and verify in one callout
+would prevent retrieval of secvret keys or public keys from the developer app
+entity, for example.
 
 You must configure each callout with Property elements in the policy
 configuration.
 
-Examples for how to parse and verify an HTTP signature using HMAC-sha256 follow.
+Examples for how to parse and verify an HTTP signature using HMAC-SHA256 follow.
 
-To get the signature example to work, you will need the API Proxy to be created. You also need an API Product, which must contain the API Proxy.  And you also need a Developer app, with a client_id and client_secret (aka consumer id and consumer secret).
+To get the signature example to work, you will need the API Proxy to be
+created. You also need an API Product, which must contain the API Proxy.  And
+you also need a Developer app, with a client_id and client_secret (aka consumer
+id and consumer secret).
 
 In the examples that follow, the consumer secret will be used as the
 shared secret for HMAC encryption. This is not required; in fact you can
 use any shared secret key.  But it is probably a good standard practice
 to use the consumer secret as the shared secret.
 
-If you wish to use RSA encryption, then you will need to separately generate an RSA keypair, use the private key on the client, and make the public key available to the Proxy in some way. The easiest way is to attach a custom attribute, call it public_key, to a developer app, and place the PEM-encoded public key there.
+If you wish to use RSA encryption, then you will need to separately generate an
+RSA keypair, use the private key on the client, and make the public key
+available to the Proxy in some way. The easiest way is to attach a custom
+attribute, call it public_key, to a developer app, and place the PEM-encoded
+public key there.
 
 
 ## Example 1: Parse the signature
 
-We want to parse the signature because the keyId contained within the signature may indicate which public key to retrieve, for use during stage 2, signature verification.
+We want to parse the signature because the keyId contained within the signature
+may indicate which public key to retrieve, for use during stage 2, signature
+verification.
 
 ```xml
 <JavaCallout name='Java-ParseHttpSignature'>
@@ -141,7 +171,9 @@ verification. For example if the keyId is an API Key, and a public key
 or secret key is attached to the developer app, then the flow steps will
 be ParseSignature, VerifyApiKey, VerifySignature.
 
-By default the Parse policy retrieves the signature from the Signature HTTP header. If you wish to parse a signature that is not available in request.header.signature, then use the following configuration:
+By default the Parse policy retrieves the signature from the Signature HTTP
+header. If you wish to parse a signature that is not available in
+request.header.signature, then use the following configuration:
 
 ```xml
 <JavaCallout name='Java-ParseHttpSignature'>
@@ -158,7 +190,6 @@ value if the signature is not well formed: if it lacks a required key,
 or if they values are not specified in quotes, if the algorithm
 specified is invalid, and so on. The Parse step does no validation of
 the signature.
-
 
 The second Java callout class performs the verification:
 
@@ -237,7 +268,7 @@ order. The inbound signature may include other headers in the signature
 beyond those required here. The list of headers should be
 space-delimited as shown here. If there is no headers property, then the
 policy does not enforce a specific set of headers to be contained in the
-signature. This is not recommended.
+signature. This is not recommended!
 
 The maxtimeskew property is optional. If specified, this is the maximum
 difference in seconds that will be allowed between the time stamped on
@@ -247,7 +278,7 @@ enforced. If the value is not present, it defaults to 60 seconds. In
 other words, a request with a Date header that represents a time of more
 than 60 seconds ago, or more than 60 seconds in the future, will be
 rejected. If the request has no Date header, then this skew is not
-enforced. The maxtimeskew works best when accompanied by a Property
+enforced. The maxtimeskew is only useful when accompanied by a Property
 that indicates the Date header is required to be included in the
 signature.
 
@@ -281,9 +312,11 @@ Parsing a signature.
 </JavaCallout>
 ```
 
-The above example shows how to specify the public key in PEM format
-directly in the policy configuration file. The configuration accepts RSA
-keys only, in either PKCS#8 or PKCS#1 format. Base64-encoded.
+The above example shows how to specify the public key in PEM format directly in
+the policy configuration file. The configuration accepts RSA keys only, in
+either PKCS#8 or PKCS#1 format. This is probably an edge-case, mostly useful for
+demonstrations. Usually your proxy will look up the public key based on the
+inbound keyId, which means the `public-key` property will reference a context variable.
 
 
 ## Example 3
@@ -300,10 +333,10 @@ keys only, in either PKCS#8 or PKCS#1 format. Base64-encoded.
 </JavaCallout>
 ```
 
-In this exmple, the public key is retrieved from a resource that is
-embedded into the JAR file itself.  This requires you to re-compile or
-at least re-assemble the jar file. The structure of the jar must be like
-so:
+In this exmple, the public key is retrieved from a resource that is embedded
+into the JAR file itself. This is also probably an edge-case. This requires you
+to re-compile or at least re-assemble the jar file. The structure of the jar
+must be like so:
 
         meta-inf/
         meta-inf/manifest.mf
@@ -338,8 +371,9 @@ the PEM into the configuration file itself.)
 ```
 
 In this example, the policy retrieves the signature from the specified
-location, rather than directly reading the Signature Header on the
-request.
+context variable, rather than directly reading the Signature Header on the
+request. It reads the `public-key` from a different context
+variable. 
 
 
 
@@ -347,7 +381,7 @@ request.
 
 In addition to verifying signatures that are RSA-based, the callout call
 also be used to verify a signature with an HMAC and a secret key. Here's
-an example:
+an example of the configuration for that scenario:
 
 ```xml
 <JavaCallout name='Java-VerifyHttpSignature'>
@@ -363,9 +397,9 @@ an example:
 
 In this example, the policy verifies an HMAC signature, using the
 client_secret from the designated app. Valid values for hmac algorithms
-are: hmac-sha1, hmac-sha256, hmac-sha512.
+are: `hmac-sha1`, `hmac-sha256`, `hmac-sha512`.
 
-The secret-key property is used only if the algorithm is an HMAC
+The `secret-key` property is used only if the algorithm is an HMAC
 algorithm. Do not specify a public-key property when verifying
 signatures that use HMAC algorithms. Do not specify a secret-key
 property when verifying signatures with RSA algorithms.
@@ -412,7 +446,7 @@ guarantee for responses to inquiries regarding this callout.
 
 ## License
 
-This material is copyright 2015,2016 Apigee Corporation, 2017-2018 Google LLC.
+This material is copyright 2015,2016 Apigee Corporation, 2017-2020 Google LLC.
 and is licensed under the [Apache 2.0 License](LICENSE). This includes the Java
 code as well as the API Proxy configuration.
 
