@@ -18,27 +18,42 @@ Should also work on Windows clients, or Linux machines.
 
 2. unpack the zip archive
 
-3. open a terminal window or command prompt, to where you have unpacked and install the dependencies for the nodejs client app.  To do so, run this command:
+3. open a terminal window or command prompt, to where you have unpacked and
+   install the dependencies for the nodejs client app.  To do so, run this
+   command:
 
-    ```npm install```
+   ```
+    npm install
+   ```
 
 4. configure the required API Product and Developer, and Developer App within Apigee Edge.
 
 5. in the same terminal window, invoke the client app:
-    ```node ./httpSigClient.js```
+   ```
+   node ./httpSigClient.js
+   ```
 
    This will display help.
 
 
 ## Notes on configuring the API Product, etc
 
-The client here relies on the consumer secret to be the shared secret for computing HMACs.  Therefore, in order
-to get this all to work, you will need the API Proxy to be created. See the [apiproxy sibling directory](../apiproxy) for how to do that.  You also need an API Product, which must contain the API Proxy.  And you also need a Developer app, with a client_id and client_secret (aka consumer id and consumer secret).   And you need to create a cache, called cache1, in the environment to support the nonces.
-If you wish to use RSA encryption, then you will need to separately generate an RSA keypair, and you will
-need to set the PEM-encoded public key as a custom attribute, called public_key, on the developer app.
+The client here relies on the consumer secret to be the shared secret for
+computing HMACs.  Therefore, in order to get this all to work, you will need the
+API Proxy to be created. See the [apiproxy sibling directory](../apiproxy) for
+how to do that.  You also need an API Product, which must contain the API Proxy.
+And you also need a Developer app, with a client_id and client_secret (aka
+consumer id and consumer secret).  And you need to create a cache, called
+cache1, in the environment to support the nonces.  If you wish to use RSA
+encryption, then you will need to separately generate an RSA keypair, and you
+will need to set the PEM-encoded public key as a custom attribute, called
+public_key, on the developer app.
 
 
-Creating the API Product and the Developer and the Developer App in Apigee Edge is typically a manual step.  Likewise setting a custom attribute on a developer app, and creating a cache. You can do all of this using the Publish section of the administrative UI.
+Creating the API Product and the Developer and the Developer App in Apigee Edge
+is typically a manual step.  Likewise setting a custom attribute on a developer
+app, and creating a cache. You can do all of this using the Publish section of
+the administrative UI.
 
 However, this directory contains a provisioning script that can do it for you automatically.
 
@@ -47,13 +62,16 @@ However, this directory contains a provisioning script that can do it for you au
 ./provisionApiProductAndApp.sh -u USERNAME:PASSWORD -o ORGNAME  -d
 ```
 
-In the examples that follow, the consumer secret generated for the developer app will be used as the
-shared secret for HMAC encryption. This is not required by the HMAC standard; in fact you can
-use any shared secret key.  But it is probably a good practice
-to use the consumer secret as the shared secret when computing or verifying HMACs in Edge.
+In the examples that follow, the consumer secret generated for the developer app
+will be used as the shared secret for HMAC encryption. This is not required by
+the HMAC standard; in fact you can use any shared secret key.  But it is
+probably a good practice to use the consumer secret as the shared secret when
+computing or verifying HMACs in Edge.
 
-The provisioning script mentioned above uses a pre-generated public/private key pair, and sets the public key as
-the custom attribute. This means for RSA signatures, you will use the private key on the client to compute the signature  and the public key in the Edge API proxy, to validate the RSA signature.
+The provisioning script mentioned above uses a pre-generated public/private key
+pair, and sets the public key as the custom attribute. This means for RSA
+signatures, you will use the private key on the client to compute the signature
+and the public key in the Edge API proxy, to validate the RSA signature.
 
 The output of the above script will finish with something like this:
 
@@ -68,13 +86,52 @@ Every invocation uses the -k option; only those invocations that use HMAC will u
 
 ## Example invocations
 
+### Examples: creating signatures without sending requests
+
+The script accepts the `-N` option, which says to 
+create the signature but don't send it. This is good for testing of signature generation.
+
+The following creates a signature with rsa-sha256, and the default headers (`date`,
+`user-agent`, `(request-target)`), signed with the
+provided private key:
+
+```
+    node ./httpSigClient.js \
+     -N \
+     -a rsa-sha256 \
+     -k testKey \
+     -p keys/key2-private.pem
+```
+
+The following creates a signature with rsa-sha256, using only the header `user`,
+signed with the
+provided private key:
+
+```
+    node ./httpSigClient.js \
+     -a rsa-sha256 \
+     -N \
+     -X \
+     -H user:denis \
+     -k testKey \
+     -p keys/key2-private.pem
+```
+
+The result here is:
+```
+HDR: Signature: keyId="testKey",algorithm="rsa-sha256",headers="user",signature="DH7DFavH1j76Hk4oiqTW1hAcmfLHq/1NcFZbgzvtJuLyber7mnih0jBRbvqe7iI34pi6PNZhXLnzvSm6y3e966n4q/yVWwA7Eb17hSkcwcFEiZvzThpM2zjWxRe5fdY3DvjGolBFQJZryx2eF2XzhVS0SowbyWJ/V+bf2GXYF5WvY/3NZczH6X6k58BAdv1Bl7CY0N0LrMbKdCWBDjFCU891B0RzgqaK9XX0z839Lscj6zsTkUh+PzGYvdrLi0CyI36pGUSEzhT/lY2StHR6MFimnXiOc1Y1U0rHnpI09659WDPLPwcCOenQgW4LxsbwQJQ795yJhiGRrRphfqeycg=="
+```
+
+
 ### Example 1: create an HMAC signature, and run hmac test 1:
 
+```
     node ./httpSigClient.js \
      -a hmac-sha256 \
      -k CONSUMER_KEY_HERE \
      -s CONSUMER_SECRET_HERE  \
      -o ORG_NAME_HERE  -t hmac-t1
+```
 
 (That command should run all on one line)
 

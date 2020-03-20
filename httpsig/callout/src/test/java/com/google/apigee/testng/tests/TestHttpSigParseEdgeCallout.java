@@ -39,7 +39,9 @@ public class TestHttpSigParseEdgeCallout {
                 if (variables == null) {
                     variables = new HashMap();
                 }
-                return (T) variables.get(name);
+                T value = (T) variables.get(name);
+                System.out.printf("getVariable(%s) => %s\n", name, (value==null)?"-null-": value.toString());
+                return value;
             }
 
             @Mock()
@@ -47,6 +49,7 @@ public class TestHttpSigParseEdgeCallout {
                 if (variables == null) {
                     variables = new HashMap();
                 }
+                System.out.printf("setVariable(%s) <= %s\n", name, (value==null)?"-null-": value.toString());
                 variables.put(name, value);
                 return true;
             }
@@ -56,6 +59,7 @@ public class TestHttpSigParseEdgeCallout {
                 if (variables == null) {
                     variables = new HashMap();
                 }
+                System.out.printf("removeVariable(%s)\n", name);
                 if (variables.containsKey(name)) {
                     variables.remove(name);
                 }
@@ -109,6 +113,7 @@ public class TestHttpSigParseEdgeCallout {
         Map properties = new HashMap();
         properties.put("algorithm", "hmac-sha256");
         properties.put("headers", "date");
+        properties.put("debug", "true");
         properties.put("maxtimeskew","-1");
 
         // msgCtxt.setVariable("request.header.date", "Tue, 20 Oct 2015 16:55:05 PDT")
@@ -117,6 +122,32 @@ public class TestHttpSigParseEdgeCallout {
         list.add("algorithm=\"hmac-sha256\"");
         list.add("headers=\"(request-target) date\"");
         list.add("signature=\"udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI=\"");
+        msgCtxt.setVariable("request.header.signature.values", list);
+
+        SignatureParserCallout callout = new SignatureParserCallout(properties);
+        ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+        // retrieve output
+        String error = msgCtxt.getVariable("httpsig_error");
+
+        // check result and output
+        //Assert.assertEquals(result, ExecutionResult.SUCCESS);
+        Assert.assertEquals(error, null, "error");
+    }
+
+    @Test()
+    public void denis_20200320() {
+        Map properties = new HashMap();
+        properties.put("algorithm", "rsa-sha256");
+        properties.put("headers", "user");
+        properties.put("debug", "true");
+
+        // msgCtxt.setVariable("request.header.date", "Tue, 20 Oct 2015 16:55:05 PDT")
+        ArrayList list = new ArrayList<String>();
+        list.add("keyId=\"denis_20200320\"");
+        list.add("algorithm=\"rsa-sha256\"");
+        list.add("headers=\"user\"");
+        list.add("signature=\"DH7DFavH1j76Hk4oiqTW1hAcmfLHq/1NcFZbgzvtJuLyber7mnih0jBRbvqe7iI34pi6PNZhXLnzvSm6y3e966n4q/yVWwA7Eb17hSkcwcFEiZvzThpM2zjWxRe5fdY3DvjGolBFQJZryx2eF2XzhVS0SowbyWJ/V+bf2GXYF5WvY/3NZczH6X6k58BAdv1Bl7CY0N0LrMbKdCWBDjFCU891B0RzgqaK9XX0z839Lscj6zsTkUh+PzGYvdrLi0CyI36pGUSEzhT/lY2StHR6MFimnXiOc1Y1U0rHnpI09659WDPLPwcCOenQgW4LxsbwQJQ795yJhiGRrRphfqeycg==\"");
         msgCtxt.setVariable("request.header.signature.values", list);
 
         SignatureParserCallout callout = new SignatureParserCallout(properties);

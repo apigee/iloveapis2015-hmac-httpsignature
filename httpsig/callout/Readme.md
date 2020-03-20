@@ -81,7 +81,7 @@ The first policy should be configured like this:
   <JavaCallout name='Java-ParseHttpSignature'>
     <Properties/>
     <ClassName>com.google.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
-    <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
+    <ResourceURL>java://edge-custom-httpsig-20200320.jar</ResourceURL>
   </JavaCallout>
 ```
 
@@ -93,7 +93,7 @@ The second should look something like this:
       <Property name='headers'>date (request-target)</Property>
     </Properties>
     <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-    <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
+    <ResourceURL>java://edge-custom-httpsig-20200320.jar</ResourceURL>
   </JavaCallout>
 ```
 
@@ -152,7 +152,7 @@ verification.
 ```xml
 <JavaCallout name='Java-ParseHttpSignature'>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200320.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -181,7 +181,7 @@ request.header.signature, then use the following configuration:
     <Property name='fullsignature'>{context.variable.containing.sig}</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200320.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -200,7 +200,7 @@ The second Java callout class performs the verification:
     <Property name='public-key'>{verifyapikey.VerifyApiKey-1.public_key}</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200320.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -252,7 +252,7 @@ The above configuration simply verifies that a signature is present. It does not
     <Property name='maxtimeskew'>120</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200320.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -308,7 +308,7 @@ Parsing a signature.
     <Property name='algorithm'>rsa-sha256</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200320.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -329,7 +329,7 @@ inbound keyId, which means the `public-key` property will reference a context va
     <Property name='headers'>Date (request-target)</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200320.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -366,7 +366,7 @@ the PEM into the configuration file itself.)
     <Property name='headers'>Date (request-target)</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200320.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -391,7 +391,7 @@ an example of the configuration for that scenario:
     <Property name='headers'>Date (request-target)</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-1.0.2.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200320.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -426,7 +426,7 @@ You do not need to build the code to use this callout. But if you want to, you c
    The above step will also run the included tests.
 
 After building the code, copy the resulting jar file, available in
-target/edge-custom-httpsig-1.0.2.jar to your apiproxy/resources/java
+target/edge-custom-httpsig-20200320.jar to your apiproxy/resources/java
 directory, or upload the jar to a resource in your org, env, or proxy.
 
 

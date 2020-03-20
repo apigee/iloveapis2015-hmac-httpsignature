@@ -20,12 +20,10 @@ package com.google.apigee.callout.httpsignature;
 
 import com.google.common.base.Splitter;
 import com.google.common.io.BaseEncoding;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;

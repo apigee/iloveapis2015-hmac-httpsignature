@@ -4,106 +4,19 @@ import com.apigee.flow.execution.ExecutionContext;
 import com.apigee.flow.execution.ExecutionResult;
 import com.apigee.flow.execution.IOIntensive;
 import com.apigee.flow.execution.spi.Execution;
-import com.apigee.flow.message.Message;
 import com.apigee.flow.message.MessageContext;
-import com.google.apigee.callout.httpsignature.HttpSignature;
-import com.google.common.base.Joiner;
-import com.google.common.base.Throwables;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @IOIntensive
-public class SignatureParserCallout implements Execution {
-    private final static String variableReferencePatternString = "(.*?)\\{([^\\{\\} ]+?)\\}(.*?)";
-    private final static Pattern variableReferencePattern = Pattern.compile(variableReferencePatternString);
-    private static final Joiner spaceJoiner = Joiner.on(' ');
-    private static final Joiner commaJoiner = Joiner.on(',');
-    private static final String _prefix = "httpsig_";
+public class SignatureParserCallout extends CalloutBase implements Execution {
     private final static String SPECIAL_HEADER_VALUE = "(request-target)";
 
-    private Map properties; // read-only
-
     public SignatureParserCallout (Map properties) {
-        this.properties = properties;
-    }
-
-    private static String varName(String s) {
-        return _prefix + s;
-    }
-
-    private String getMultivaluedHeader(MessageContext msgCtxt, String header) {
-        String name = header + ".values";
-        ArrayList list = (ArrayList) msgCtxt.getVariable(name);
-        return commaJoiner.join(list);
-    }
-
-    private HttpSignature getFullSignature(MessageContext msgCtxt)
-        throws IllegalStateException {
-        // consult the property first. If it is not present, retrieve the
-        // request header.
-        String signature = ((String) this.properties.get("fullsignature"));
-        Boolean obtainedFromHeader = false;
-        if (signature == null) {
-            // In draft 01, the header was "Authorization".
-            // As of draft 03, the header is "Signature".
-            //
-            // NB: In Edge, getting a header that includes a comma requires getting
-            // the .values, which is an ArrayList of strings.
-            //
-            signature = getMultivaluedHeader(msgCtxt,"request.header.signature");
-            obtainedFromHeader = true;
-            if (signature == null) {
-                throw new IllegalStateException("signature is not specified.");
-            }
-        }
-        signature = signature.trim();
-        if (signature.equals("")) {
-            throw new IllegalStateException("fullsignature is empty.");
-        }
-        if (!obtainedFromHeader) {
-            signature = resolvePropertyValue(signature, msgCtxt);
-            if (signature == null || signature.equals("")) {
-                throw new IllegalStateException("fullsignature does not resolve.");
-            }
-        }
-        HttpSignature httpsig = new HttpSignature(signature);
-        return httpsig;
-    }
-
-    // If the value of a property contains a pair of curlies,
-    // eg, {apiproxy.name}, then "resolve" the value by de-referencing
-    // the context variable whose name appears between the curlies.
-    // If the variable name is not known, then it returns a null.
-    private String resolvePropertyValue(String spec, MessageContext msgCtxt) {
-        Matcher matcher = variableReferencePattern.matcher(spec);
-        StringBuffer sb = new StringBuffer();
-        while (matcher.find()) {
-            matcher.appendReplacement(sb, "");
-            sb.append(matcher.group(1));
-            Object v = msgCtxt.getVariable(matcher.group(2));
-            if (v != null){
-                sb.append((String) v );
-            }
-            sb.append(matcher.group(3));
-        }
-        matcher.appendTail(sb);
-        return (sb.length() > 0) ? sb.toString() : null;
+        super(properties);
     }
 
     private String getSigningBase(MessageContext msgCtxt, HttpSignature sig)
@@ -138,13 +51,21 @@ public class SignatureParserCallout implements Execution {
         return sigBase;
     }
 
-    public ExecutionResult execute(MessageContext msgCtxt,
-                                   ExecutionContext exeCtxt) {
-        String varName;
+    private void clearVariables(MessageContext msgCtxt) {
+        msgCtxt.removeVariable(varName("error"));
+        msgCtxt.removeVariable(varName("exception"));
+        msgCtxt.removeVariable(varName("stacktrace"));
+        msgCtxt.removeVariable(varName("algorithm"));
+        msgCtxt.removeVariable(varName("keyId"));
+        msgCtxt.removeVariable(varName("signature"));
+        msgCtxt.removeVariable(varName("headers"));
+    }
+
+    public ExecutionResult execute(MessageContext msgCtxt, ExecutionContext exeCtxt) {
         ExecutionResult result = ExecutionResult.ABORT;
         Boolean isValid = false;
         try {
-            msgCtxt.setVariable(varName("error"), null);
+            clearVariables(msgCtxt);
             // get the full signature header payload
             HttpSignature sigObject = getFullSignature(msgCtxt);
 
@@ -152,15 +73,25 @@ public class SignatureParserCallout implements Execution {
             msgCtxt.setVariable(varName("algorithm"), sigObject.getAlgorithm());
             msgCtxt.setVariable(varName("keyId"), sigObject.getKeyId());
             msgCtxt.setVariable(varName("signature"), sigObject.getSignatureString());
-            msgCtxt.setVariable(varName("headers"), spaceJoiner.join(sigObject.getHeaders()));
+            msgCtxt.setVariable(varName("headers"), spaceJoiner.apply(sigObject.getHeaders()));
 
             isValid = true;
             result = ExecutionResult.SUCCESS;
-        }
-        catch (Exception e) {
-            //e.printStackTrace();
-            msgCtxt.setVariable(varName("error"), e.getMessage());
-            msgCtxt.setVariable(varName("stacktrace"), Throwables.getStackTraceAsString(e));
+
+        } catch (IllegalStateException exc1) {
+            if (getDebug()) {
+                String stacktrace = getStackTraceAsString(exc1);
+                System.out.printf("\n** %s\n", stacktrace);
+            }
+            setExceptionVariables(exc1, msgCtxt);
+            result = ExecutionResult.ABORT;
+        } catch (Exception e) {
+            if (getDebug()) {
+                String stacktrace = getStackTraceAsString(e);
+                msgCtxt.setVariable(varName("stacktrace"), stacktrace);
+            }
+            setExceptionVariables(e, msgCtxt);
+            result = ExecutionResult.ABORT;
         }
 
         msgCtxt.setVariable(varName("isSuccess"), isValid);

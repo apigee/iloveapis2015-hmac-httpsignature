@@ -3,8 +3,7 @@
 // A callout for Apigee Edge that verifies an HTTP Signature.
 // See http://tools.ietf.org/html/draft-cavage-http-signatures-04 .
 //
-//
-// Copyright 2015-2018 Google LLC.
+// Copyright 2015-2020 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,13 +24,9 @@ import com.apigee.flow.execution.ExecutionContext;
 import com.apigee.flow.execution.ExecutionResult;
 import com.apigee.flow.execution.IOIntensive;
 import com.apigee.flow.execution.spi.Execution;
-import com.apigee.flow.message.Message;
 import com.apigee.flow.message.MessageContext;
-import com.google.apigee.callout.httpsignature.HttpSignature;
 import com.google.apigee.callout.httpsignature.KeyUtils.KeyParseException;
-import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
-import com.google.common.base.Throwables;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -40,21 +35,15 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @IOIntensive
-public class SignatureVerifierCallout implements Execution {
-    private static final Joiner spaceJoiner = Joiner.on(' ');
+public class SignatureVerifierCallout extends CalloutBase implements Execution {
     private static final Splitter spaceSplitter = Splitter.on(' ').trimResults();
     public static final DateTimeFormatter DATE_FORMATTERS[] = {
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX"),
@@ -64,18 +53,10 @@ public class SignatureVerifierCallout implements Execution {
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     };
 
-    private static final String _prefix = "httpsig_";
-
-    private Map properties; // read-only
-
     public SignatureVerifierCallout (Map properties) {
-        this.properties = properties;
+        super(properties);
     }
 
-    private static String varName(String s) {
-        return _prefix + s;
-    }
-    
     private String getRequiredAlgorithm(MessageContext msgCtxt) throws Exception {
         String algorithm = (String) this.properties.get("algorithm");
         if (algorithm == null) {
@@ -106,8 +87,7 @@ public class SignatureVerifierCallout implements Execution {
         return Long.parseLong(timeskew, 10);
     }
 
-    private Iterable<String> getRequiredHeaders(MessageContext msgCtxt)
-        /* throws Exception */ {
+    private Iterable<String> getRequiredHeaders(MessageContext msgCtxt) {
         String headers = (String) this.properties.get("headers");
         if (headers == null) { return null; }
         headers = headers.trim();
@@ -142,51 +122,7 @@ public class SignatureVerifierCallout implements Execution {
               d1 = parseDate(dateString);
             }
         }
-        return d1.toEpochSecond(); 
-    }
-
-    private String getMultivaluedHeader(MessageContext msgCtxt, String header) {
-        String name = header + ".values";
-        String separator = ",";
-        ArrayList list = (ArrayList) msgCtxt.getVariable(name);
-        String result= "";
-        for (Object s : list) {
-            result += (String) s + separator;
-        }
-        return result;
-    }
-
-    private HttpSignature getFullSignature(MessageContext msgCtxt)
-        throws IllegalStateException {
-        // consult the property first. If it is not present, retrieve the
-        // request header.
-        String signature = ((String) this.properties.get("fullsignature"));
-        Boolean obtainedFromHeader = false;
-        if (signature == null) {
-            // In draft 01, the header was "Authorization".
-            // As of draft 03, the header is "Signature".
-            // NB: In Edge, getting a header that includes a comma requires getting
-            // the .values, which is an ArrayList of strings.
-            //
-            signature = getMultivaluedHeader(msgCtxt,"request.header.signature");
-
-            obtainedFromHeader = true;
-            if (signature == null) {
-                throw new IllegalStateException("signature is not specified.");
-            }
-        }
-        signature = signature.trim();
-        if (signature.equals("")) {
-            throw new IllegalStateException("fullsignature is empty.");
-        }
-        if (!obtainedFromHeader) {
-            signature = resolvePropertyValue(signature, msgCtxt);
-            if (signature == null || signature.equals("")) {
-                throw new IllegalStateException("fullsignature does not resolve.");
-            }
-        }
-        HttpSignature httpsig = new HttpSignature(signature);
-        return httpsig;
+        return d1.toEpochSecond();
     }
 
     private static InputStream getResourceAsStream(String resourceName)
@@ -205,19 +141,6 @@ public class SignatureVerifierCallout implements Execution {
         }
 
         return in;
-    }
-
-    // If the value of a property value begins and ends with curlies,
-    // and has no intervening spaces, eg, {apiproxy.name}, then
-    // "resolve" the value by de-referencing the context variable whose
-    // name appears between the curlies.
-    private String resolvePropertyValue(String spec, MessageContext msgCtxt) {
-        if (spec.startsWith("{") && spec.endsWith("}") && (spec.indexOf(" ") == -1)) {
-            String varname = spec.substring(1,spec.length() - 1);
-            String value = msgCtxt.getVariable(varname);
-            return value;
-        }
-        return spec;
     }
 
     private class KeyProviderImpl implements KeyProvider {
@@ -266,7 +189,7 @@ public class SignatureVerifierCallout implements Execution {
                     return KeyUtils.decodePublicKey(publicKeyString);
                 }
                 catch (KeyParseException ex) {
-                    throw new InvalidKeySpecException("must be PKCS#1 or PKCS#8");                    
+                    throw new InvalidKeySpecException("must be PKCS#1 or PKCS#8");
                 }
             }
 
@@ -366,13 +289,22 @@ public class SignatureVerifierCallout implements Execution {
         }
     }
 
-    public ExecutionResult execute(MessageContext msgCtxt,
-                                   ExecutionContext exeCtxt) {
-        String varName;
+    private void clearVariables(MessageContext msgCtxt) {
+        msgCtxt.removeVariable(varName("error"));
+        msgCtxt.removeVariable(varName("exception"));
+        msgCtxt.removeVariable(varName("stacktrace"));
+        msgCtxt.removeVariable(varName("requiredHeaders"));
+        msgCtxt.removeVariable(varName("requiredAlgorithm"));
+        msgCtxt.removeVariable(varName("timeskew"));
+        msgCtxt.removeVariable(varName("signingBase"));
+        msgCtxt.removeVariable(varName("isValid"));
+    }
+
+    public ExecutionResult execute(MessageContext msgCtxt, ExecutionContext exeCtxt) {
         ExecutionResult result = ExecutionResult.ABORT;
         Boolean isValid = false;
         try {
-            msgCtxt.setVariable(varName("error"), null);
+            clearVariables(msgCtxt);
 
             // 1. retrieve and parse the full signature header payload
             HttpSignature sigObject = getFullSignature(msgCtxt);
@@ -395,7 +327,7 @@ public class SignatureVerifierCallout implements Execution {
             // check that they are all present in the sig.
             Iterable<String> requiredHeaders = getRequiredHeaders(msgCtxt);
             if (requiredHeaders != null) {
-                msgCtxt.setVariable(varName("requiredHeaders"), spaceJoiner.join(requiredHeaders));
+                msgCtxt.setVariable(varName("requiredHeaders"), spaceJoiner.apply(requiredHeaders));
                 List<String> actualHeaders = sigObject.getHeaders()
                     .stream()
                     .map(String::toLowerCase)
@@ -430,12 +362,15 @@ public class SignatureVerifierCallout implements Execution {
             msgCtxt.setVariable(varName("signingBase"), verification.signingBase.replace('\n','|'));
 
             result = ExecutionResult.SUCCESS;
-        }
-        catch (Exception e) {
-            //System.out.printf(Throwables.getStackTraceAsString(e));
-
-            msgCtxt.setVariable(varName("error"), e.getMessage());
-            msgCtxt.setVariable(varName("stacktrace"), Throwables.getStackTraceAsString(e));
+        } catch (IllegalStateException exc1) {
+            setExceptionVariables(exc1, msgCtxt);
+            result = ExecutionResult.ABORT;
+        } catch (Exception e) {
+            if (getDebug()) {
+                String stacktrace = getStackTraceAsString(e);
+                msgCtxt.setVariable(varName("stacktrace"), stacktrace);
+            }
+            setExceptionVariables(e, msgCtxt);
             result = ExecutionResult.ABORT;
         }
 

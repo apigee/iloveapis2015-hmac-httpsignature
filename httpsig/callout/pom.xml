@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.apigee.callout</groupId>
   <artifactId>edge-custom-httpsig</artifactId>
-  <version>1.0.2</version>
+  <version>20200320</version>
   <name>HttpSignatureEdgeCallout</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>
@@ -14,10 +14,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.version>1.8</java.version>
     <jmockit.version>1.7</jmockit.version>
-<!--
-    <commons.lang.version>2.6</commons.lang.version>
--->
-    <bouncycastle.version>1.59</bouncycastle.version>
+    <bouncycastle.version>1.60</bouncycastle.version>
     <guava.version>26.0-jre</guava.version>
     <apiproxy.java.rsrc.dir>../example-bundle/apiproxy/resources/java</apiproxy.java.rsrc.dir>
   </properties>
@@ -27,34 +24,21 @@
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcprov-jdk15on</artifactId>
       <version>${bouncycastle.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15on</artifactId>
       <version>${bouncycastle.version}</version>
+      <scope>provided</scope>
     </dependency>
+
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>${guava.version}</version>
+      <scope>provided</scope>
     </dependency>
-<!--
-    <dependency>
-      <groupId>commons-lang</groupId>
-      <artifactId>commons-lang</artifactId>
-      <version>${commons.lang.version}</version>
-      <scope>compile</scope>
-    </dependency>
--->
-
-<!--
-    <dependency>
-      <groupId>commons-codec</groupId>
-      <artifactId>commons-codec</artifactId>
-      <version>1.7</version>
-      <scope>compile</scope>
-    </dependency>
--->
 
     <dependency>
       <groupId>org.testng</groupId>
@@ -69,16 +53,6 @@
       <version>${jmockit.version}</version>
       <scope>test</scope>
     </dependency>
-
-    <!--
-        <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpclient</artifactId>
-        <version>4.3.5</version>
-        <scope>compile</scope>
-        </dependency>
-    -->
-
     <!--
 
 The following 2 jar dependencies from Apigee are not avaiable in any
@@ -132,6 +106,8 @@ mvn install:install-file \
             </goals>
             <configuration>
               <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <includeScope>compile</includeScope>
+              <excludeScope>provided</excludeScope>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>false</overWriteSnapshots>
               <overWriteIfNewer>true</overWriteIfNewer>
@@ -142,13 +118,18 @@ mvn install:install-file \
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.0</version>
+        <configuration>
+          <source>${java.version}</source>
+          <target>${java.version}</target>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>3.1.0</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-          </execution>
-        </executions>
+        <version>3.1.1</version>
         <configuration>
           <archive>
             <!-- do not include the pom.xml file in the generated jar -->
@@ -166,8 +147,19 @@ mvn install:install-file \
               <tasks>
                 <copy todir="${apiproxy.java.rsrc.dir}">
                   <fileset dir="${project.build.directory}">
+                    <include name="${project.build.finalName}.jar"/>
+<!--
+
+                    <exclude name="lib/message-flow-1.0.0.jar"/>
+                    <exclude name="lib/expressions-1.0.0.jar"/>
+                    <exclude name="lib/bcpkix-jdk15on-1.60.jar"/>
+                    <exclude name="lib/bcprov-jdk15on-1.60.jar"/>
+-->
+
+<!--
                     <include name="${project.artifactId}-${project.version}.jar"/>
                     <include name="lib/guava-${guava.version}.jar"/>
+-->
                     <!-- include other required dependencies here
                          <include name="lib/libname-x.y.z.jar"/>
                     -->
@@ -183,15 +175,43 @@ mvn install:install-file \
         </executions>
       </plugin>
 
-      <plugin>
+
+     <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.7.0</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-        </configuration>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.0.0-M2</version>
+        <executions>
+          <execution>
+            <id>enforce-maven</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireMavenVersion>
+                  <version>3.0.5</version>
+                </requireMavenVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
+
+       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>versions-maven-plugin</artifactId>
+        <version>2.7</version>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <goals>
+              <goal>display-dependency-updates</goal>
+              <goal>display-plugin-updates</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
     </plugins>
   </build>
 </project>

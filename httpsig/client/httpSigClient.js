@@ -5,7 +5,9 @@
 // Signature that uses RSA signing, or HMAC signing.
 //
 // created: Mon Jul 20 11:11:32 2015
-// last saved: <2018-October-29 12:56:11>
+// last saved: <2020-March-20 10:14:50>
+/* jshint esversion:9 */
+/* global process */
 
 const fs = require('fs'),
       http = require('http'),
@@ -17,17 +19,42 @@ const fs = require('fs'),
       ['s' , 'secretkey=ARG', 'secret key. (only for HMAC)'],
       ['o' , 'org=ARG', 'the Edge organization'],
       ['e' , 'env=ARG', 'the Edge organization (Default: test)'],
-      ['k' , 'apikey=ARG', 'the API key to use for the request'],
+      ['k' , 'keyId=ARG', 'the keyId to use in the signature. Often this is the apikey.'],
       ['t' , 'path=ARG', 'the path to use (Default ' +  defaults.path + ')'],
       ['n' , 'nonce=ARG', 'set the nonce to use (Default: no nonce)'],
-      ['H' , 'header=ARG', 'set+sign an additional header (Name:value) in the request'],
+      ['H' , 'header=ARG+', 'set+sign an additional header (Name:value) in the request'],
       ['a' , 'algorithm=ARG', 'set the RSA alg to use (Default: '+defaults.alg+')'],
+      ['X' , 'exclude-default-headers', 'exclude (request-target) date and user-agent from the headers to sign.'],
+      ['N' , 'dontsend', 'do not send a request outbound.'],
       //['v', 'verbose'],
       ['h' , 'help']
  ]).bindHelp();
 
     // process.argv starts with 'node' and 'scriptname.js'
 var opt = getopt.parse(process.argv.slice(2));
+
+var MockRequest = function(opts) {
+      var instance = {...opts};
+      var xformedHeaders = {};
+      Object.keys(instance.headers).forEach(key => {
+        xformedHeaders[key.toLowerCase()] = instance.headers[key];
+      });
+      instance._headers = xformedHeaders;
+      delete instance.headers;
+      // public members
+      instance.getHeader = function(name) {
+        return instance._headers[name];
+      };
+
+      instance.setHeader = function(name, value) {
+        instance._headers[name] = value;
+      };
+
+      instance.setHeader('date', (new Date()).toISOString());
+      //instance.setHeader('user-agent', 'mock-request');
+
+      return instance;
+    };
 
 
 function stringStartsWith(s, prefix, position) {
@@ -61,26 +88,28 @@ var requestOptions = {
 var signatureOptions = {
   key: null,
   algorithm: 'will-be-set-later',
-  headers: [ '(request-target)', 'date', 'user-agent' ],
+  headers: opt.options['exclude-default-headers']?[]:[ '(request-target)', 'date', 'user-agent' ],
   draft: '04'
 };
 
 
-if (!opt.options.env) { opt.options.env = 'test'; }
 
-if (!opt.options.org) {
-  console.log('missing org.');
-  getopt.showHelp();
-  process.exit(1);
+if ( ! opt.options.dontsend) {
+  if (!opt.options.env) { opt.options.env = 'test'; }
+  if (!opt.options.org) {
+    console.log('missing org.');
+    getopt.showHelp();
+    process.exit(1);
+  }
+  requestOptions.host = opt.options.org + '-' + opt.options.env + '.apigee.net';
 }
-requestOptions.host = opt.options.org + '-' + opt.options.env + '.apigee.net';
 
-if (!opt.options.apikey) {
+if (!opt.options.keyId) {
   console.log('missing apikey.');
   getopt.showHelp();
   process.exit(1);
 }
-signatureOptions.keyId = opt.options.apikey;
+signatureOptions.keyId = opt.options.keyId;
 
 
 if ( ! opt.options.algorithm) {
@@ -151,19 +180,21 @@ if (opt.options.nonce) {
   signatureOptions.headers.push('nonce');
 }
 
-// additional header
+// additional headers
 if (opt.options.header) {
-  var parts = opt.options.header.split(':')
+  opt.options.header.forEach( (h) => {
+    var parts = h.split(':')
     .map(Function.prototype.call, String.prototype.trim);
-
-  requestOptions.headers[parts[0]] = parts[1];
-  signatureOptions.headers.push(parts[0]);
+    requestOptions.headers[parts[0]] = parts[1];
+    signatureOptions.headers.push(parts[0]);
+  });
 }
-
+//console.log(JSON.stringify(requestOptions, null, 2));
 
 console.log('connecting to...');
 console.log('  %s%s', requestOptions.host, requestOptions.path);
-var req = http.request(requestOptions, responseHandler);
+var req =
+  (opt.options.dontsend)? MockRequest(requestOptions) : http.request(requestOptions, responseHandler);
 
 // Adds a 'Date' header, computes the signature for the request using
 // the provided private key, and finally adds the 'Authorization' header
@@ -174,4 +205,4 @@ Object.keys(req._headers).forEach(function(key){
   console.log('HDR: %s: %s', key, req._headers[key]);
 });
 
-req.end();
+//?req.end();
