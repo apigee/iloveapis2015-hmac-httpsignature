@@ -122,6 +122,47 @@ The result here is:
 HDR: Signature: keyId="testKey",algorithm="rsa-sha256",headers="user",signature="DH7DFavH1j76Hk4oiqTW1hAcmfLHq/1NcFZbgzvtJuLyber7mnih0jBRbvqe7iI34pi6PNZhXLnzvSm6y3e966n4q/yVWwA7Eb17hSkcwcFEiZvzThpM2zjWxRe5fdY3DvjGolBFQJZryx2eF2XzhVS0SowbyWJ/V+bf2GXYF5WvY/3NZczH6X6k58BAdv1Bl7CY0N0LrMbKdCWBDjFCU891B0RzgqaK9XX0z839Lscj6zsTkUh+PzGYvdrLi0CyI36pGUSEzhT/lY2StHR6MFimnXiOc1Y1U0rHnpI09659WDPLPwcCOenQgW4LxsbwQJQ795yJhiGRrRphfqeycg=="
 ```
 
+Debugging the http signature :
+
+```
+DEBUG=http-signature node ./httpSigClient.js -X -N \
+  -o gaccelerate3 -e test -a rsa-sha256 -k "SN=dkjdk" -p keys/key2-private.pem \
+  -H "x-request-id:00000000-0000-0000-0000-000000000004" \
+  -H "tpp-redirect-uri: https://www.sometpp.com/redirect/" \
+  -H "digest:SHA-256=TGGHcPGLechhcNo4gndoKUvCBhWaQOPgtoVDIpxc6J4=" \
+  -H "psu-id: 1337" 
+```
+
+this will produce:
+```
+connecting to...
+  ORG-ENV.apigee.net/httpsig/rsa-t1?how=areyou
+  http-signature signing headers: ["x-request-id","tpp-redirect-uri","digest","psu-id"]
+  http-signature  +0ms
+  http-signature string to sign: x-request-id: 00000000-0000-0000-0000-000000000004
+tpp-redirect-uri: https://www.sometpp.com/redirect/
+digest: SHA-256=TGGHcPGLechhcNo4gndoKUvCBhWaQOPgtoVDIpxc6J4=
+psu-id: 1337
+  http-signature  +0ms
+  http-signature alg: [
+  'rsa-sha256',
+  'rsa',
+  'sha256',
+  index: 0,
+  input: 'rsa-sha256',
+  groups: undefined
+]
+  http-signature  +0ms
+HDR: user-agent: nodejs httpSigClient.js
+HDR: x-request-id: 00000000-0000-0000-0000-000000000004
+HDR: tpp-redirect-uri: https://www.sometpp.com/redirect/
+HDR: digest: SHA-256=TGGHcPGLechhcNo4gndoKUvCBhWaQOPgtoVDIpxc6J4=
+HDR: psu-id: 1337
+HDR: date: 2020-03-23T20:32:39.490Z
+HDR: Date: Mon, 23 Mar 2020 20:32:39 GMT
+HDR: Signature: keyId="SN=dkjdk",algorithm="rsa-sha256",headers="x-request-id tpp-redirect-uri digest psu-id",signature="xHdJElmOwyg3PISD8he918hvB8osE9vKjFPl73dY0Mv15OrxlASTjzGiOAMcxSex6a+KG0nn5bua6uy3fdTtUPY2JeAuA88/MLpEzjlBxOBwxka7qcVGlaoG7FqrSYJRDYxNf0X1BlKygCzJyymH9D4cplwYtXx+BH5WeLdpko6Fyu0FadknPUUta/AYcEC5K7qAmNY1HQjAnXzDjQWCplB7uacE0NL0fqNdf/5OQc8xdWOml77ov8EeBV3iWI8lbN6j5jiIJaTVtni9Nd3Auu9wTbPVKQvusm+jMVpPBhpQ3WJIfsxpqmNVavWWOWh/wR2AQv3tskylUNxRfHaFRA=="
+
+```
 
 ### Example 1: create an HMAC signature, and run hmac test 1:
 

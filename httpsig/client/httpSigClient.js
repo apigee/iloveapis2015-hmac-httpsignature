@@ -5,7 +5,7 @@
 // Signature that uses RSA signing, or HMAC signing.
 //
 // created: Mon Jul 20 11:11:32 2015
-// last saved: <2020-March-20 10:14:50>
+// last saved: <2020-March-23 13:32:16>
 /* jshint esversion:9 */
 /* global process */
 
@@ -182,11 +182,11 @@ if (opt.options.nonce) {
 
 // additional headers
 if (opt.options.header) {
+  let re1 = new RegExp(':(.+)');
   opt.options.header.forEach( (h) => {
-    var parts = h.split(':')
-    .map(Function.prototype.call, String.prototype.trim);
-    requestOptions.headers[parts[0]] = parts[1];
-    signatureOptions.headers.push(parts[0]);
+    var parts = h.split(re1).map(Function.prototype.call, String.prototype.trim);
+    requestOptions.headers[parts[0].toLowerCase()] = parts[1];
+    signatureOptions.headers.push(parts[0].toLowerCase());
   });
 }
 //console.log(JSON.stringify(requestOptions, null, 2));
