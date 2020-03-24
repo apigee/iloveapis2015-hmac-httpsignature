@@ -58,7 +58,7 @@ against MiTM interception attacks.
 ## Using the callout
 
 You do not need to build the code to use this callout. But if you want to, you
-can do so. Instructions are at the bottom of this readme. 
+can do so. Instructions are at the bottom of this readme.
 
 You must use the callout in two phases: parse and verify. The parse phase
 extracts the elements from the signature header. The verify phase actually
@@ -98,7 +98,7 @@ The second should look something like this:
 ```
 
 Between those two policies you will use a step that dereferences the keyId into
-some kind of key material, either a public key or a symmetric key. 
+some kind of key material, either a public key or a symmetric key.
 
 After including those policies in your proxy, use the Edge UI, or a command-line
 tool like [importAndDeploy.js](https://github.com/DinoChiesa/apigee-edge-js/blob/master/examples/importAndDeploy.js)
@@ -111,8 +111,8 @@ Signatures, to the proxy.
 
 ## Notes
 
-There are two classes in the callout jar: 
-* `com.google.apigee.callout.httpsignature.SignatureParserCallout` -  parses an HTTP Signature. 
+There are two classes in the callout jar:
+* `com.google.apigee.callout.httpsignature.SignatureParserCallout` -  parses an HTTP Signature.
 * `com.google.apigee.callout.httpsignature.SignatureVerifierCallout` - verifies an HTTP signature.
 
 The reason this is done in two separate steps is that sometimes the
@@ -267,7 +267,7 @@ signature includes AT LEAST those headers listed in the value, in any
 order. The inbound signature may include other headers in the signature
 beyond those required here. The list of headers should be
 space-delimited as shown here. If there is no headers property, then the
-policy defaults to a signature on the Date header. 
+policy defaults to a signature on the Date header.
 
 The `maxtimeskew` property is optional. If specified, this is the maximum
 difference in seconds that will be allowed between the time stamped on
@@ -282,9 +282,9 @@ indicates the Date header is required to be included in the
 signature.
 
 The verify policy extracts the signature from the default location - the
-Signature header on the request. If it is present elsewhere, you need to
-specify it with the fullsignature property, as in the example for
-Parsing a signature.
+Signature header on the request. If it is present elsewhere, you need to specify
+the appropriate conetxt variable with the fullsignature property, as in the
+example for Parsing a signature.
 
 
 ## Example 2
@@ -372,7 +372,7 @@ the PEM into the configuration file itself.)
 In this example, the policy retrieves the signature from the specified
 context variable, rather than directly reading the Signature Header on the
 request. It reads the `public-key` from a different context
-variable. 
+variable.
 
 
 
