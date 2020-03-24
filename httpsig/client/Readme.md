@@ -88,7 +88,7 @@ Every invocation uses the -k option; only those invocations that use HMAC will u
 
 ### Examples: creating signatures without sending requests
 
-The script accepts the `-N` option, which says to 
+The script accepts the `-N` option, which says to
 create the signature but don't send it. This is good for testing of signature generation.
 
 The following creates a signature with rsa-sha256, and the default headers (`date`,
@@ -130,7 +130,7 @@ DEBUG=http-signature node ./httpSigClient.js -X -N \
   -H "x-request-id:00000000-0000-0000-0000-000000000004" \
   -H "tpp-redirect-uri: https://www.sometpp.com/redirect/" \
   -H "digest:SHA-256=TGGHcPGLechhcNo4gndoKUvCBhWaQOPgtoVDIpxc6J4=" \
-  -H "psu-id: 1337" 
+  -H "psu-id: 1337"
 ```
 
 this will produce:
