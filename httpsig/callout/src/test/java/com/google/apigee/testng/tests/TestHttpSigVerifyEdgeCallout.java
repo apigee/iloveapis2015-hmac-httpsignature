@@ -274,145 +274,158 @@ public class TestHttpSigVerifyEdgeCallout {
         Assert.assertEquals(isValid, true);
     }
 
+    @Test()
+    public void hs2019_rsa_Good() {
+        Map properties = new HashMap();
+        properties.put("fullsignature",
+                       "Signature keyId=\"rsa-test\", algorithm=\"hs2019\", headers=\"x-request-id tpp-redirect-uri digest psu-id\", signature=\"TgbIVw/ON8mTvd7+R5nbcYPl62CwJaHDjNOWfw+AFLbpJANmgR3+J88x8XwI8Q0gbc8mlmosfC7Oyu9A6vUTQpKosU7VglwC4SlVtMhbqM3xFw+yeQstKIjikAvy0ZvSaFOCWNubbRgJTq6fQCjNjqrMchKesMHAaTGRE4BVHUAXe3QAGDiVh3B7hLb9tIN83WZoZpX2lH+fQS3I3uHfCRsZixSkjH9t+hNGz858DL9heobs7s1wc88MfRUfnxUpXZlcZnH3ZfOI8/1xYBvOkUCla7Z0Tiqy+tfUaHp3VMTC+theBTVvukCFVakaMOY/IHX2S42uHQWI7UTBP2XpuQ==\"");
+
+        properties.put("algorithm", "hs2019");
+        properties.put("hs2019-algorithm", "rsa");
+        properties.put("headers", "x-request-id psu-id digest");
+        properties.put("public-key", rsaKey1);
+        properties.put("debug", "true");
+
+        msgCtxt.setVariable("request.header.psu-id", "1337");
+        msgCtxt.setVariable("request.header.tpp-redirect-uri", "https://www.sometpp.com/redirect/");
+        msgCtxt.setVariable("request.header.digest", "SHA-256=TGGHcPGLechhcNo4gndoKUvCBhWaQOPgtoVDIpxc6J4=");
+        msgCtxt.setVariable("request.header.x-request-id","00000000-0000-0000-0000-000000000004");
+
+        SignatureVerifierCallout callout = new SignatureVerifierCallout(properties);
+        ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+        // retrieve output
+        String signingBase = msgCtxt.getVariable("httpsig_signingBase");
+        System.out.printf("SigningBase: %s\n", signingBase);
+
+        String error = msgCtxt.getVariable("httpsig_error");
+        boolean isValid = msgCtxt.getVariable("httpsig_isValid");
+
+        Assert.assertEquals(result, ExecutionResult.SUCCESS);
+        Assert.assertEquals(error, null);
+        Assert.assertEquals(isValid, true);
+    }
+
+    @Test()
+    public void hs2019_hmac_Good() {
+        Map properties = new HashMap();
+        properties.put("fullsignature",
+                       "Signature keyId=\"hmac-test\", algorithm=\"hs2019\", headers=\"x-request-id tpp-redirect-uri digest psu-id\", signature=\"jr9m69VJsQQJWrTyzaWiXrWZeg498e9PAO+yxiI9L2niaJXocMGTYqAZbde6B7v7Jd532TXgKHXAFZdXIHPgsQ==\"");
+
+        properties.put("algorithm", "hs2019");
+        properties.put("hs2019-algorithm", "hmac");
+        properties.put("headers", "x-request-id psu-id digest tpp-redirect-uri");
+        properties.put("secret-key", "Secret1234567890ABCDEFGHIJKLMNOP");
+        properties.put("debug", "true");
+
+        msgCtxt.setVariable("request.header.psu-id", "1337");
+        msgCtxt.setVariable("request.header.tpp-redirect-uri", "https://www.sometpp.com/redirect/");
+        msgCtxt.setVariable("request.header.digest", "SHA-256=TGGHcPGLechhcNo4gndoKUvCBhWaQOPgtoVDIpxc6J4=");
+        msgCtxt.setVariable("request.header.x-request-id","00000000-0000-0000-0000-000000000004");
+
+        SignatureVerifierCallout callout = new SignatureVerifierCallout(properties);
+        ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+        // retrieve output
+        String signingBase = msgCtxt.getVariable("httpsig_signingBase");
+        System.out.printf("SigningBase: %s\n", signingBase);
+
+        String error = msgCtxt.getVariable("httpsig_error");
+        boolean isValid = msgCtxt.getVariable("httpsig_isValid");
+
+        Assert.assertEquals(result, ExecutionResult.SUCCESS);
+        Assert.assertEquals(error, null);
+        Assert.assertEquals(isValid, true);
+    }
 
 
-    // @Test()
-    // public void test1_NoKey() {
-    //
-    //     // set up
-    //     Map m = new HashMap();
-    //     m.put("string-to-sign", "The quick brown fox...");
-    //
-    //     HmacCreatorCallout callout = new HmacCreatorCallout(m);
-    //     ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
-    //
-    //     // retrieve output
-    //     String error = msgCtxt.getVariable("hmac.error");
-    //
-    //     // check result and output
-    //     Assert.assertEquals(result, ExecutionResult.ABORT);
-    //     Assert.assertEquals(error, "key is not specified or is empty.");
-    // }
-    //
-    // @Test()
-    // public void test2_ValidConfig() {
-    //
-    //     // set up
-    //     Map m = new HashMap();
-    //     m.put("string-to-sign", "The quick brown fox...");
-    //     m.put("key", "secret123");
-    //     m.put("debug", "true");
-    //
-    //     // run it
-    //     ExecutionResult result = new HmacCreatorCallout(m).execute(msgCtxt, exeCtxt);
-    //
-    //     // retrieve output
-    //     String alg = msgCtxt.getVariable("hmac.javaizedAlg");
-    //     //System.out.println("algorithm: " + alg);
-    //     String error = msgCtxt.getVariable("hmac.error");
-    //     //System.out.println("error: " + error);
-    //     String key = msgCtxt.getVariable("hmac.key");
-    //     //System.out.println("key: " + key);
-    //     String hex = msgCtxt.getVariable("hmac.signature.hex");
-    //     //System.out.println("hex: " + hex);
-    //     String b64 = msgCtxt.getVariable("hmac.signature.b64");
-    //     //System.out.println("b64: " + b64);
-    //
-    //     // check result and output
-    //     Assert.assertEquals(result, ExecutionResult.SUCCESS);
-    //     Assert.assertEquals(alg, "HmacSHA256");
-    //     Assert.assertEquals(error, null);
-    //     Assert.assertEquals(key, "secret123");
-    //     Assert.assertEquals(b64, "5tC369Qn1HqQ0IbiCpU6DOwHPDTMdFI/SuIAXrIdjj0=");
-    // }
-    //
-    //
-    // @Test()
-    // public void test3_KnownOutcome() {
-    //     Map m = new HashMap();
-    //     m.put("string-to-sign", "testing123");
-    //     m.put("key", "hello");
-    //     m.put("algorithm", "SHA-1");
-    //     m.put("debug", "true");
-    //
-    //     ExecutionResult result = new HmacCreatorCallout(m).execute(msgCtxt, exeCtxt);
-    //
-    //     // retrieve output
-    //     String alg = msgCtxt.getVariable("hmac.alg");
-    //     String error = msgCtxt.getVariable("hmac.error");
-    //     String hex = msgCtxt.getVariable("hmac.signature.hex");
-    //
-    //     // check result and output
-    //     Assert.assertEquals(result, ExecutionResult.SUCCESS);
-    //     Assert.assertEquals(alg, "SHA-1");
-    //     Assert.assertEquals(error, null);
-    //     Assert.assertEquals(hex.toLowerCase(), "ac2c2e614882ce7158f69b7e3b12114465945d01");
-    // }
-    //
-    // @Test()
-    // public void test4_KnownOutcome_MD5() {
-    //     // set up
-    //     Map m = new HashMap();
-    //     m.put("string-to-sign", "testing123");
-    //     m.put("key", "hello");
-    //     m.put("algorithm", "MD-5");
-    //     m.put("debug", "true");
-    //
-    //     // run it
-    //     ExecutionResult result = new HmacCreatorCallout(m).execute(msgCtxt, exeCtxt);
-    //
-    //     // retrieve output
-    //     String alg = msgCtxt.getVariable("hmac.javaizedAlg");
-    //     //System.out.println("algorithm: " + alg);
-    //     String error = msgCtxt.getVariable("hmac.error");
-    //     //System.out.println("error: " + error);
-    //     String hex = msgCtxt.getVariable("hmac.signature.hex");
-    //     //System.out.println("hex: " + hex);
-    //
-    //     // check result and output
-    //     Assert.assertEquals(result, ExecutionResult.SUCCESS);
-    //     Assert.assertEquals(error, null);
-    //     Assert.assertEquals(alg, "HmacMD5");
-    //     Assert.assertEquals(hex.toLowerCase(), "1fcd2cdb3005f4d9baef9f3957cd2d1f");
-    // }
-    //
-    // @Test()
-    // public void VerifyHmac1() {
-    //     Map m = new HashMap();
-    //     m.put("string-to-sign", "The quick brown fox...");
-    //     m.put("key", "secret123");
-    //     m.put("algorithm", "SHA-256");
-    //     m.put("hmac-base64", "5tC369Qn1HqQ0IbiCpU6DOwHPDTMdFI/SuIAXrIdjj0=");
-    //     m.put("debug", "true");
-    //
-    //     ExecutionResult result = new HmacCreatorCallout(m).execute(msgCtxt, exeCtxt);
-    //
-    //     // retrieve output
-    //     String error = msgCtxt.getVariable("hmac.error");
-    //
-    //     // check result and output
-    //     Assert.assertEquals(result, ExecutionResult.SUCCESS);
-    //     Assert.assertEquals(error, null);
-    // }
-    //
-    // @Test()
-    // public void VerifyHmacFailure1() {
-    //     Map m = new HashMap();
-    //     m.put("string-to-sign", "The quick brown fox..!");
-    //     m.put("key", "secret123");
-    //     m.put("algorithm", "SHA-256");
-    //     m.put("hmac-base64", "5tC369Qn1HqQ0IbiCpU6DOwHPDTMdFI/SuIAXrIdjj0=");
-    //     m.put("debug", "true");
-    //
-    //     ExecutionResult result = new HmacCreatorCallout(m).execute(msgCtxt, exeCtxt);
-    //
-    //     // retrieve output
-    //     String error = msgCtxt.getVariable("hmac.error");
-    //
-    //     // check result and output
-    //     Assert.assertEquals(result, ExecutionResult.ABORT);
-    //     Assert.assertEquals(error, "HMAC does not verify");
-    // }
+    @Test()
+    public void hs2019_hmac_Created() {
+        Map properties = new HashMap();
+        properties.put("fullsignature",
+                       "Signature keyId=\"hmac-test\", algorithm=\"hs2019\", headers=\"x-request-id created\", created=1585359103, signature=\"KpzrYXpfHYOWULE40i4MzwhjlsXdO0Sh7nP1sl6aDw2UKlnFdtXLyPdFyc/yc60c/sTy/L97uEDzjK+j6+1FXg==\"");
+
+        properties.put("algorithm", "hs2019");
+        properties.put("hs2019-algorithm", "hmac");
+        properties.put("headers", "x-request-id");
+        properties.put("secret-key", "Secret1234567890ABCDEFGHIJKLMNOP");
+        properties.put("debug", "true");
+
+        msgCtxt.setVariable("request.header.x-request-id","00000000-0000-0000-0000-000000000004");
+
+        SignatureVerifierCallout callout = new SignatureVerifierCallout(properties);
+        ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+        // retrieve output
+        String signingBase = msgCtxt.getVariable("httpsig_signingBase");
+        System.out.printf("SigningBase: %s\n", signingBase);
+
+        String error = msgCtxt.getVariable("httpsig_error");
+        boolean isValid = msgCtxt.getVariable("httpsig_isValid");
+
+        Assert.assertEquals(result, ExecutionResult.SUCCESS);
+        Assert.assertEquals(error, null);
+        Assert.assertEquals(isValid, true);
+    }
+
+    @Test()
+    public void hs2019_hmac_CreatedAndExpires() {
+        Map properties = new HashMap();
+        properties.put("fullsignature",
+                       "Signature keyId=\"hmac-test\", algorithm=\"hs2019\", headers=\"x-request-id created expires\", created=1585359627, expires=1585359927, signature=\"/UgploIox2L4oh9h4/SwMyeLpKx78/rLVay9GGzXPM06EZ68KAwUHQhc9p1Il7lSOO7l0nmPrMQdHjlQcMRbRA==\"");
+
+        properties.put("algorithm", "hs2019");
+        properties.put("hs2019-algorithm", "hmac");
+        properties.put("headers", "x-request-id");
+        properties.put("secret-key", "Secret1234567890ABCDEFGHIJKLMNOP");
+        properties.put("debug", "true");
+
+        msgCtxt.setVariable("request.header.x-request-id","00000000-0000-0000-0000-000000000004");
+
+        SignatureVerifierCallout callout = new SignatureVerifierCallout(properties);
+        ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+        // retrieve output
+        String signingBase = msgCtxt.getVariable("httpsig_signingBase");
+        System.out.printf("SigningBase: %s\n", signingBase);
+
+        String error = msgCtxt.getVariable("httpsig_error");
+        boolean isValid = msgCtxt.getVariable("httpsig_isValid");
+
+        Assert.assertEquals(result, ExecutionResult.ABORT);
+        Assert.assertEquals(error, "the signature has expired");
+        Assert.assertEquals(isValid, false);
+    }
+
+    @Test()
+    public void hs2019_hmac_CreatedAndExpires_IgnoreExpiry() {
+        Map properties = new HashMap();
+        properties.put("fullsignature",
+                       "Signature keyId=\"hmac-test\", algorithm=\"hs2019\", headers=\"x-request-id created expires\", created=1585359627, expires=1585359927, signature=\"/UgploIox2L4oh9h4/SwMyeLpKx78/rLVay9GGzXPM06EZ68KAwUHQhc9p1Il7lSOO7l0nmPrMQdHjlQcMRbRA==\"");
+
+        properties.put("algorithm", "hs2019");
+        properties.put("hs2019-algorithm", "hmac");
+        properties.put("headers", "x-request-id");
+        properties.put("maxtimeskew","10000d"); // ~27 years from Friday, 27 March 2020, 19:06
+        properties.put("secret-key", "Secret1234567890ABCDEFGHIJKLMNOP");
+        properties.put("debug", "true");
+
+        msgCtxt.setVariable("request.header.x-request-id","00000000-0000-0000-0000-000000000004");
+
+        SignatureVerifierCallout callout = new SignatureVerifierCallout(properties);
+        ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+        // retrieve output
+        String signingBase = msgCtxt.getVariable("httpsig_signingBase");
+        System.out.printf("SigningBase: %s\n", signingBase);
+
+        String error = msgCtxt.getVariable("httpsig_error");
+        boolean isValid = msgCtxt.getVariable("httpsig_isValid");
+
+        Assert.assertEquals(result, ExecutionResult.SUCCESS);
+        Assert.assertEquals(error, null);
+        Assert.assertEquals(isValid, true);
+    }
 
 
 }

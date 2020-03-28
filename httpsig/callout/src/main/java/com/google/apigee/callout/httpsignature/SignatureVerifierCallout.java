@@ -26,6 +26,7 @@ import com.apigee.flow.execution.IOIntensive;
 import com.apigee.flow.execution.spi.Execution;
 import com.apigee.flow.message.MessageContext;
 import com.google.apigee.callout.httpsignature.KeyUtils.KeyParseException;
+import com.google.apigee.util.TimeResolver;
 import com.google.common.base.Splitter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -76,6 +77,24 @@ public class SignatureVerifierCallout extends CalloutBase implements Execution {
         return algorithm;
     }
 
+    private String getRequiredHs2019Algorithm(MessageContext msgCtxt) throws Exception {
+        String algorithm = (String) this.properties.get("hs2019-algorithm");
+        if (algorithm == null) {
+            throw new IllegalStateException("hs2019-algorithm is not specified.");
+        }
+        algorithm = algorithm.trim();
+        if (algorithm.equals("")) {
+            throw new IllegalStateException("hs2019-algorithm is not specified.");
+        }
+
+        algorithm = resolvePropertyValue(algorithm, msgCtxt);
+        if (algorithm == null || algorithm.equals("")) {
+            throw new IllegalStateException("hs2019-algorithm resolves to an empty string.");
+        }
+        return algorithm;
+    }
+
+
     private long getMaxTimeSkew(MessageContext msgCtxt) throws Exception {
         final long defaultMaxSkew = 60L;
         String timeskew = (String) this.properties.get("maxtimeskew");
@@ -83,11 +102,11 @@ public class SignatureVerifierCallout extends CalloutBase implements Execution {
         timeskew = timeskew.trim();
         if (timeskew.equals("")) { return defaultMaxSkew; }
         timeskew = resolvePropertyValue(timeskew, msgCtxt);
-        if (timeskew == null || timeskew.equals("")) { return defaultMaxSkew; }
-        return Long.parseLong(timeskew, 10);
+        Long durationInSeconds = TimeResolver.resolveExpression(timeskew);
+        return durationInSeconds;
     }
 
-    private Iterable<String> getRequiredHeaders(MessageContext msgCtxt) {
+    private List<String> getRequiredHeaders(MessageContext msgCtxt) {
         String headers = (String) this.properties.get("headers");
         if (headers == null) { return null; }
         headers = headers.trim();
@@ -99,7 +118,7 @@ public class SignatureVerifierCallout extends CalloutBase implements Execution {
             //throw new IllegalStateException("headers resolves to an empty string");
             return null;
         }
-        return spaceSplitter.split(headers);
+        return spaceSplitter.splitToList(headers);
     }
 
     private static ZonedDateTime parseDate(String dateString) {
@@ -145,7 +164,6 @@ public class SignatureVerifierCallout extends CalloutBase implements Execution {
 
     private class KeyProviderImpl implements KeyProvider {
         MessageContext c;
-        private final static String specialValue = "(request-target)";
 
         public KeyProviderImpl(MessageContext msgCtxt) {
             c = msgCtxt;
@@ -256,16 +274,15 @@ public class SignatureVerifierCallout extends CalloutBase implements Execution {
 
     private class EdgeHeaderProvider implements ReadOnlyHttpSigHeaderMap {
         MessageContext c;
-        private final static String specialValue = "(request-target)";
 
         public EdgeHeaderProvider(MessageContext msgCtxt) {
             c = msgCtxt;
         }
 
-        public String getHeaderValue(String header) {
+        public String getHeaderValue(String key) {
             String value = null;
 
-            if (header.equals(specialValue)) {
+            if (key.equals("(request-target)")) {
                 try {
                     // in HTTP Signature, the "path" includes the url path + query
                     URI uri = new URI(c.getVariable("proxy.url").toString());
@@ -283,7 +300,7 @@ public class SignatureVerifierCallout extends CalloutBase implements Execution {
                 }
             }
             else {
-                value = c.getVariable("request.header."+ header);
+                value = c.getVariable("request.header."+ key);
             }
             return value;
         }
@@ -307,15 +324,15 @@ public class SignatureVerifierCallout extends CalloutBase implements Execution {
             clearVariables(msgCtxt);
 
             // 1. retrieve and parse the full signature header payload
-            HttpSignature sigObject = getFullSignature(msgCtxt);
+            HttpSignature sig = getFullSignature(msgCtxt);
 
             // 2. get the required algorithm, if specified,
             // and check that the actual algorithm in the sig is as required.
-            String actualAlgorithm = sigObject.getAlgorithm();
+            String actualAlgorithm = sig.getAlgorithm();
             String requiredAlgorithm = getRequiredAlgorithm(msgCtxt);
 
             msgCtxt.setVariable(varName("requiredAlgorithm"), requiredAlgorithm);
-            if (!HttpSignature.supportedAlgorithms.containsKey(requiredAlgorithm)) {
+            if (!HttpSignature.isSupportedAlgorithm(requiredAlgorithm)) {
                 throw new Exception("unsupported algorithm: " + requiredAlgorithm);
             }
 
@@ -325,10 +342,10 @@ public class SignatureVerifierCallout extends CalloutBase implements Execution {
 
             // 3. if there are any headers that are configured to be required,
             // check that they are all present in the sig.
-            Iterable<String> requiredHeaders = getRequiredHeaders(msgCtxt);
+            List<String> requiredHeaders = getRequiredHeaders(msgCtxt);
             if (requiredHeaders != null) {
                 msgCtxt.setVariable(varName("requiredHeaders"), spaceJoiner.apply(requiredHeaders));
-                List<String> actualHeaders = sigObject.getHeaders()
+                List<String> actualHeaders = sig.getHeaders()
                     .stream()
                     .map(String::toLowerCase)
                     .collect(Collectors.toList());
@@ -341,33 +358,53 @@ public class SignatureVerifierCallout extends CalloutBase implements Execution {
                 }
             }
 
-            // 4. Verify that the date skew is within compliance
+            // 4. Verify that the date is in the past (allowing for skew)
             long maxTimeSkew = getMaxTimeSkew(msgCtxt);
-            if (maxTimeSkew > 0L) {
-                long t1 = getRequestSecondsSinceEpoch(msgCtxt);
-                long t2 = ZonedDateTime.now().toEpochSecond();
-                long diff = Math.abs(t2 - t1);
-                msgCtxt.setVariable(varName("timeskew"), Long.toString(diff));
-                if (diff > maxTimeSkew) {
-                    // fail.
-                    throw new Exception("date header exceeds max time skew ("+diff+">" + maxTimeSkew + ").");
+            if (maxTimeSkew >= 0L) {
+                long now = ZonedDateTime.now().toEpochSecond();
+                // check that date is in the past, if it is included
+                if (requiredHeaders.indexOf("date")>=0) {
+                    long sentTime = getRequestSecondsSinceEpoch(msgCtxt);
+                    if (sentTime > now + maxTimeSkew) {
+                        throw new Exception("date header is in the future");
+                    }
+                }
+
+                // check expires is in the future, if it is included
+                if (sig.getHeaders().indexOf("expires")>=0) {
+                    long expiry = (long) sig.getExpires();
+                    if (expiry < now - maxTimeSkew) {
+                        throw new Exception("the signature has expired");
+                    }
+                }
+                // check expires is in the past, if it is included
+                if (sig.getHeaders().indexOf("created")>=0) {
+                    long created = (long) sig.getCreated();
+                    if (created > now + maxTimeSkew) {
+                        throw new Exception("the created time is in the future");
+                    }
                 }
             }
 
             // 5. finally, verify the signature
             EdgeHeaderProvider hp = new EdgeHeaderProvider(msgCtxt);
             KeyProvider kp = new KeyProviderImpl(msgCtxt);
-            SigVerificationResult verification = sigObject.verify(actualAlgorithm, hp, kp);
+            SigVerificationResult verification = sig.verify(actualAlgorithm, hp, kp, () -> {return getRequiredHs2019Algorithm(msgCtxt);} );
             isValid = verification.isValid;
             msgCtxt.setVariable(varName("signingBase"), verification.signingBase.replace('\n','|'));
 
             result = ExecutionResult.SUCCESS;
         } catch (IllegalStateException exc1) {
+            if (getDebug()) {
+                String stacktrace = getStackTraceAsString(exc1);
+                System.out.printf("%s\n", stacktrace);
+            }
             setExceptionVariables(exc1, msgCtxt);
             result = ExecutionResult.ABORT;
         } catch (Exception e) {
             if (getDebug()) {
                 String stacktrace = getStackTraceAsString(e);
+                System.out.printf("%s\n", stacktrace);
                 msgCtxt.setVariable(varName("stacktrace"), stacktrace);
             }
             setExceptionVariables(e, msgCtxt);

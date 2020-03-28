@@ -85,30 +85,31 @@ public abstract class CalloutBase {
     // consult the property first. If it is not present, retrieve the
     // request header.
     String signature = ((String) this.properties.get("fullsignature"));
-    Boolean obtainedFromHeader = false;
-    if (signature == null) {
-      // In draft 01, the header was "Authorization".
-      // As of draft 03, the header is "Signature".
-      // NB: In Edge, getting a header that includes a comma requires getting
-      // the .values, which is an ArrayList of strings.
-      //
-      signature = getMultivaluedHeader(msgCtxt, "request.header.signature");
-
-      obtainedFromHeader = true;
-      if (signature == null) {
-        throw new IllegalStateException("signature is not specified.");
-      }
-    }
-    signature = signature.trim();
-    if (signature.equals("")) {
-      throw new IllegalStateException("fullsignature is empty.");
-    }
-    if (!obtainedFromHeader) {
+    if (signature != null) {
+      signature = signature.trim();
       signature = resolvePropertyValue(signature, msgCtxt);
       if (signature == null || signature.equals("")) {
         throw new IllegalStateException("fullsignature does not resolve.");
       }
     }
+    else {
+      // In draft 01, the header was "Authorization".
+      // As of draft 03, the header is "Signature".
+      // In later drafts, it's "Authorization" with a Signature type.
+
+      // NB: In Edge, getting a header that includes a comma requires getting
+      // the .values, which is an ArrayList of strings.
+      //
+      signature = getMultivaluedHeader(msgCtxt, "request.header.Authorization");
+      if (signature == null) {
+        throw new IllegalStateException("signature is not specified.");
+      }
+      signature = signature.trim();
+    }
+    if (signature.equals("")) {
+      throw new IllegalStateException("fullsignature is empty.");
+    }
+
     HttpSignature httpsig = new HttpSignature(signature);
     return httpsig;
   }

@@ -85,7 +85,7 @@ public class TestHttpSigParseEdgeCallout {
 
         // check result and output
         Assert.assertEquals(result, ExecutionResult.ABORT);
-        Assert.assertEquals(error, "the signature is malformed (The quick brown fox...)");
+        Assert.assertTrue(error.startsWith("the signature is malformed"));
     }
 
     @Test()
@@ -122,7 +122,7 @@ public class TestHttpSigParseEdgeCallout {
         list.add("algorithm=\"hmac-sha256\"");
         list.add("headers=\"(request-target) date\"");
         list.add("signature=\"udvCIHZAafyK+szbOI/KkLxeIihexHpHpvMrwbeoErI=\"");
-        msgCtxt.setVariable("request.header.signature.values", list);
+        msgCtxt.setVariable("request.header.Authorization.values", list);
 
         SignatureParserCallout callout = new SignatureParserCallout(properties);
         ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
@@ -148,7 +148,7 @@ public class TestHttpSigParseEdgeCallout {
         list.add("algorithm=\"rsa-sha256\"");
         list.add("headers=\"user\"");
         list.add("signature=\"DH7DFavH1j76Hk4oiqTW1hAcmfLHq/1NcFZbgzvtJuLyber7mnih0jBRbvqe7iI34pi6PNZhXLnzvSm6y3e966n4q/yVWwA7Eb17hSkcwcFEiZvzThpM2zjWxRe5fdY3DvjGolBFQJZryx2eF2XzhVS0SowbyWJ/V+bf2GXYF5WvY/3NZczH6X6k58BAdv1Bl7CY0N0LrMbKdCWBDjFCU891B0RzgqaK9XX0z839Lscj6zsTkUh+PzGYvdrLi0CyI36pGUSEzhT/lY2StHR6MFimnXiOc1Y1U0rHnpI09659WDPLPwcCOenQgW4LxsbwQJQ795yJhiGRrRphfqeycg==\"");
-        msgCtxt.setVariable("request.header.signature.values", list);
+        msgCtxt.setVariable("request.header.Authorization.values", list);
 
         SignatureParserCallout callout = new SignatureParserCallout(properties);
         ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
@@ -178,7 +178,7 @@ public class TestHttpSigParseEdgeCallout {
 
         // check result and output
         Assert.assertEquals(result, ExecutionResult.ABORT);
-        Assert.assertEquals(error, "unsupported algorithm: icecream");
+        Assert.assertTrue(error.startsWith("the signature is malformed: unsupported algorithm: icecream"));
     }
 
     @Test()
