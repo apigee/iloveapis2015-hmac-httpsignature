@@ -19,8 +19,6 @@
 package com.google.apigee.callout.httpsignature;
 
 import com.apigee.flow.message.MessageContext;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,13 +30,8 @@ import java.util.regex.Pattern;
 
 public abstract class CalloutBase {
   private static final String _varprefix = "httpsig_";
-  private static final String variableReferencePatternString = "(.*?)\\{([^\\{\\} ]+?)\\}(.*?)";
-  private static final Pattern variableReferencePattern =
-      Pattern.compile(variableReferencePatternString);
-
   private static final String commonError = "^(.+?)[:;] (.+)$";
   private static final Pattern commonErrorPattern = Pattern.compile(commonError);
-
   protected static final Function<Iterable, String> commaJoiner = getJoiner(",");
   protected static final Function<Iterable, String> spaceJoiner = getJoiner(" ");
 
@@ -87,12 +80,11 @@ public abstract class CalloutBase {
     String signature = ((String) this.properties.get("fullsignature"));
     if (signature != null) {
       signature = signature.trim();
-      signature = resolvePropertyValue(signature, msgCtxt);
+      signature = PackageUtils.resolvePropertyValue(signature, msgCtxt);
       if (signature == null || signature.equals("")) {
         throw new IllegalStateException("fullsignature does not resolve.");
       }
-    }
-    else {
+    } else {
       // In draft 01, the header was "Authorization".
       // As of draft 03, the header is "Signature".
       // In later drafts, it's "Authorization" with a Signature type.
@@ -119,32 +111,6 @@ public abstract class CalloutBase {
     if (value == null) return false;
     if (value.trim().toLowerCase().equals("true")) return true;
     return false;
-  }
-
-  // If the value of a property contains any pairs of curlies,
-  // eg, {apiproxy.name}, then "resolve" the value by de-referencing
-  // the context variables whose names appear between curlies.
-  protected String resolvePropertyValue(String spec, MessageContext msgCtxt) {
-    Matcher matcher = variableReferencePattern.matcher(spec);
-    StringBuffer sb = new StringBuffer();
-    while (matcher.find()) {
-      matcher.appendReplacement(sb, "");
-      sb.append(matcher.group(1));
-      Object v = msgCtxt.getVariable(matcher.group(2));
-      if (v != null) {
-        sb.append((String) v);
-      }
-      sb.append(matcher.group(3));
-    }
-    matcher.appendTail(sb);
-    return sb.toString();
-  }
-
-  protected static String getStackTraceAsString(Throwable t) {
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    t.printStackTrace(pw);
-    return sw.toString();
   }
 
   protected void setExceptionVariables(Exception exc1, MessageContext msgCtxt) {

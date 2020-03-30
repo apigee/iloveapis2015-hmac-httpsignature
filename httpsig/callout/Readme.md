@@ -333,42 +333,6 @@ inbound keyId, which means the `public-key` property will reference a context va
 ```xml
 <JavaCallout name='Java-VerifyHttpSignature'>
   <Properties>
-    <Property name='pemfile'>publickey-1.pem</Property>
-    <Property name='algorithm'>rsa-sha256</Property>
-    <Property name='headers'>Date (request-target)</Property>
-  </Properties>
-  <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
-</JavaCallout>
-```
-
-In this exmple, the public key is retrieved from a resource that is embedded
-into the JAR file itself. This is also probably an edge-case. This requires you
-to re-compile or at least re-assemble the jar file. The structure of the jar
-must be like so:
-
-        meta-inf/
-        meta-inf/manifest.mf
-        com/
-        com/dinochiesa/
-        com/dinochiesa/httpsignature/SignatureVerifierCallout.class
-        com/dinochiesa/httpsignature/SignatureParserCallout.class
-        com/dinochiesa/httpsignature/HttpSignature.class
-        resources/
-        resources/publickey-1.pem
-
-You can also specify the pemfile as a variable, inside curlies. It gets
-resolved the same way - must be present as a resource in the
-jar. (Because it requires re-assembling the jar file, this is probably a
-much less convenient way to specify the public key, than just embedding
-the PEM into the configuration file itself.)
-
-
-## Example 4
-
-```xml
-<JavaCallout name='Java-VerifyHttpSignature'>
-  <Properties>
     <Property name='fullsignature>{context.variable.here}</Property>
     <Property name='public-key'>{verifyapikey.VerifyApiKey-1.public_key}</Property>
     <Property name='algorithm'>rsa-sha256</Property>
@@ -386,7 +350,7 @@ variable.
 
 
 
-## Example 5
+## Example 4
 
 In addition to verifying signatures that are RSA-based, the callout call
 also be used to verify a signature with an HMAC and a secret key. Here's
@@ -412,6 +376,27 @@ The `secret-key` property is used only if the algorithm is an HMAC
 algorithm. Do not specify a public-key property when verifying
 signatures that use HMAC algorithms. Do not specify a secret-key
 property when verifying signatures with RSA algorithms.
+
+
+## Example 5
+
+You can specify the secret key in an encoded form, using base16, base64, or
+base64url.  Do that with the `secret-key-encoding` property. This is helpful
+when the secretkey is a string of bytes that cannot be represented as a UTF-8
+string.
+
+```xml
+<JavaCallout name='Java-VerifyHttpSignature'>
+  <Properties>
+    <Property name='secret-key'>{encoded_secret_key}</Property>
+    <Property name='secret-key-encoding'>base16</Property>
+    <Property name='algorithm'>hmac-sha256</Property>
+    <Property name='headers'>Date (request-target)</Property>
+  </Properties>
+  <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
+  <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+</JavaCallout>
+```
 
 
 ## Example 6: hs2019
@@ -472,6 +457,7 @@ directory, or upload the jar to a resource in your org, env, or proxy.
 - Apigee Edge expressions v1.0
 - Apigee Edge message-flow v1.0
 - Google Guava 26.0-jre
+- BouncyCastle 1.60
 
 
 ## Support

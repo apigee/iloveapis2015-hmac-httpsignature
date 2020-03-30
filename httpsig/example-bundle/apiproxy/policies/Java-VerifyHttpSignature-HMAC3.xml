@@ -5,5 +5,5 @@
     <Property name='headers'>date (request-target) nonce</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200330.jar</ResourceURL>
 </JavaCallout>

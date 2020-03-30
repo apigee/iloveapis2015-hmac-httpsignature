@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.apigee.callout</groupId>
   <artifactId>edge-custom-httpsig</artifactId>
-  <version>20200327</version>
+  <version>20200330</version>
   <name>HttpSignatureEdgeCallout</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>

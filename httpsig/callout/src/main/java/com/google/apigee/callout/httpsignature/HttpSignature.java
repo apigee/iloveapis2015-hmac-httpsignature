@@ -143,8 +143,8 @@ public class HttpSignature {
         SigVerificationResult result = new SigVerificationResult();
         result.signingBase = this.getSigningBase(hmap);
         result.isValid = false;
-        String signingKey = kp.getSecretKey();
-        SecretKeySpec key = new SecretKeySpec(signingKey.getBytes("UTF-8"), javaAlgoName);
+        byte[] signingKey = kp.getSecretKey();
+        SecretKeySpec key = new SecretKeySpec(signingKey, javaAlgoName);
         Mac hmac = Mac.getInstance(javaAlgoName);
         hmac.init(key);
         result.computedSignature =

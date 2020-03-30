@@ -1,5 +1,5 @@
 <JavaCallout name='Java-ParseHttpSignature'>
   <Properties/>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200330.jar</ResourceURL>
 </JavaCallout>
