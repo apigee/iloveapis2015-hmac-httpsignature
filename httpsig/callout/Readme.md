@@ -1,12 +1,12 @@
 ## HttpSignature verifier
 
 This directory contains the Java source code and Java jars required to
-compile a Java callout for Apigee Edge that does Verification of HTTP
+compile a Java callout for Apigee Edge that does Generation or Verification of HTTP
 Signatures, either RSA or HMAC.
 
 HTTP Signature is a [draft specification for an IETF standard](https://tools.ietf.org/html/draft-cavage-http-signatures-11).
 
-It describes how to generate and verify signatures on HTTP requests. This specification has been in draft status since at least 2015, and it's not clear that it will move to final standardization and "recommendation" status. Even so, it's stable and it works.
+The specification describes how to generate and verify signatures on HTTP requests. This specification has been in draft status since at least 2015, and it's not clear that it will move to final standardization and "recommendation" status. Even so, it's stable and it works, and is in commercial use.
 
 ## Disclaimer
 
@@ -31,14 +31,14 @@ These are the elements of a signature:
 | element     | purpose                                                                                                          |
 |-------------|------------------------------------------------------------------------------------------------------------------|
 | keyId       | an identifier for the key used to produce the signature. This may allow the verifier to look up a verifying key. |
-| algorithm   | the algorithm used to produce the sig. Supported mechanisms include hmac-sha256 and rsa-sha256.                  |
+| algorithm   | the algorithm used to produce the sig. Supported mechanisms include hmac-sha256 and rsa-sha256. In later revisions of the specification, hs2019 is also supported as a generic algorithm marker.                 |
 | headers     | the set of headers which has been signed. This element is optional, according to the spec.                       |
 | signature   | the base64-encoded signature value.                                                                              |
 | created     | the seconds-since-epoch time of creation. (supported only with algorithm=hs2019)                                 |
 | expires     | the seconds-since-epoch time of expiry. (supported only with algorithm=hs2019)                                   |
 
-Receivers of an HTTP request bearing a signature can lookup a verifying key from the
-asserted keyId. This verifying key may be a symmetric key, if the algorithm is
+Receivers of an HTTP request bearing a signature can lookup a verifying key using the
+asserted keyId. This verifying key may be a symmetric key, appropriate if the algorithm is
 hmac-sha256, or it may be a public key, if the algorithm is rsa-sha256.  With
 the verifying key, the verifying party can verify the asserted signature on the set of headers. If
 the signature is valid, then the receiver can be assured the set of signed
@@ -65,16 +65,19 @@ does not include the `date` header doesn't protect against replays. A signature
 on a set of headers that does not include `(request-target)`, does not protect
 against MiTM interception attacks.
 
-## Using the callout
+## Using the callout to Verify signatures
 
 You do not need to build the code to use this callout. But if you want to, you
 can do so. Instructions are at the bottom of this readme.
 
-You must use the callout in two phases: parse and verify. The parse phase
+If you have a client that can produce HTTP Signatures, you can use this callout
+to verify those signatures.
+
+To do so, you will use the callout in two phases: parse and verify. The parse phase
 extracts the elements from the signature header. The verify phase actually
 verifies the extracted signature. These are separate phases to allow the API
 proxy to use the output of the parse phase, specifically the keyId, to retrieve
-a key from whatever store is appropriate.  Only after the parse can the proxy
+a key from whatever store is appropriate.  Only after the parse, can the proxy
 know the key to use for verification. So the logic works like this:
 
 1. parse the signature header to determine the keyId
@@ -82,7 +85,7 @@ know the key to use for verification. So the logic works like this:
 3. verify the signature with the retrieved key
 
 Therefore, in the general case, in which different clients will use different
-keys, you must include TWO distinct Java callout policies in your
+keys, you must include two distinct Java callout policies in your
 apiproxy/resources/policies directory. The first does the parsing, the second
 performs the signature validation and verification.
 
@@ -91,7 +94,7 @@ The first policy should be configured like this:
   <JavaCallout name='Java-ParseHttpSignature'>
     <Properties/>
     <ClassName>com.google.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
-    <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+    <ResourceURL>java://edge-custom-httpsig-20200331.jar</ResourceURL>
   </JavaCallout>
 ```
 
@@ -103,7 +106,7 @@ The second should look something like this:
       <Property name='headers'>date (request-target)</Property>
     </Properties>
     <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-    <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+    <ResourceURL>java://edge-custom-httpsig-20200331.jar</ResourceURL>
   </JavaCallout>
 ```
 
@@ -119,11 +122,33 @@ Then, use a client to generate and send http requests with appropriate HTTP
 Signatures, to the proxy.
 
 
+## Using the callout to Generate signatures
+
+You can also use the callout to generate an HTTP Signature.  To do so, you must
+first retrieve the key to use for the signing - either a symmetric key for HMAC
+algorithms, or a private RSA key for RSA algorithms.
+
+The policy configuration looks like this: 
+
+```xml
+  <JavaCallout name='Java-GenerateHttpSignature1'>
+    <Properties>
+      <Property name='private-key'>{private.private_rsa_key1}</Property>
+      <Property name='headers'>date (request-target)</Property>
+      <Property name='keyId'>arbitrary-string-here</Property>
+      <Property name='algorithm'>rsa-sha256</Property>
+    </Properties>
+    <ClassName>com.google.apigee.callout.httpsignature.SignatureGeneratorCallout</ClassName>
+    <ResourceURL>java://edge-custom-httpsig-20200331.jar</ResourceURL>
+  </JavaCallout>
+```
+
 ## Notes
 
-There are two classes in the callout jar:
+There are three classes in the callout jar:
 * `com.google.apigee.callout.httpsignature.SignatureParserCallout` -  parses an HTTP Signature.
 * `com.google.apigee.callout.httpsignature.SignatureVerifierCallout` - verifies an HTTP signature.
+* `com.google.apigee.callout.httpsignature.SignatureGeneratorCallout` - generates an HTTP signature.
 
 The reason this is done in two separate steps is that sometimes the
 configuration of the Verification step requires data which can be retrieved only
@@ -134,7 +159,7 @@ entity, for example.
 You must configure each callout with Property elements in the policy
 configuration.
 
-Examples for how to parse and verify an HTTP signature using HMAC-SHA256 follow.
+Examples for how to parse and verify an HTTP signature using HMAC-SHA256 or RSA-SHA256 follow.
 
 To get the signature example to work, you will need the API Proxy to be
 created. You also need an API Product, which must contain the API Proxy.  And
@@ -162,7 +187,7 @@ verification.
 ```xml
 <JavaCallout name='Java-ParseHttpSignature'>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200331.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -191,7 +216,7 @@ request.header.signature, then use the following configuration:
     <Property name='fullsignature'>{context.variable.containing.sig}</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureParserCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200331.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -210,7 +235,7 @@ The second Java callout class performs the verification:
     <Property name='public-key'>{verifyapikey.VerifyApiKey-1.public_key}</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200331.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -262,7 +287,7 @@ The above configuration simply verifies that a signature is present. It does not
     <Property name='maxtimeskew'>120</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200331.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -317,7 +342,7 @@ example for Parsing a signature.
     <Property name='algorithm'>rsa-sha256</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200331.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -339,7 +364,7 @@ inbound keyId, which means the `public-key` property will reference a context va
     <Property name='headers'>Date (request-target)</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200331.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -364,7 +389,7 @@ an example of the configuration for that scenario:
     <Property name='headers'>Date (request-target)</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200331.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -394,12 +419,12 @@ string.
     <Property name='headers'>Date (request-target)</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200331.jar</ResourceURL>
 </JavaCallout>
 ```
 
 
-## Example 6: hs2019
+## Example 6: Verify hs2019 (HMAC)
 
 The later drafts of the specification now include support for an algorithm name
 `hs2019`. The idea, as far as I can tell, is to not disclose the algorithm to
@@ -419,7 +444,7 @@ an additional property, `hs20198-algorithm`.  For example:
     <Property name='headers'>created digest</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-20200327.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200331.jar</ResourceURL>
 </JavaCallout>
 ```
 
@@ -448,7 +473,7 @@ You do not need to build the code to use this callout. But if you want to, you c
    The above step will also run the included tests.
 
 After building the code, copy the resulting jar file, available in
-target/edge-custom-httpsig-20200327.jar to your apiproxy/resources/java
+target/edge-custom-httpsig-20200331.jar to your apiproxy/resources/java
 directory, or upload the jar to a resource in your org, env, or proxy.
 
 

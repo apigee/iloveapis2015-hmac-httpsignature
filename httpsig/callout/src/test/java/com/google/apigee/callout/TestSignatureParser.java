@@ -1,4 +1,4 @@
-package com.google.apigee.testng.tests;
+package com.google.apigee.callout;
 
 import com.google.apigee.callout.httpsignature.SignatureParser;
 import java.util.ArrayList;

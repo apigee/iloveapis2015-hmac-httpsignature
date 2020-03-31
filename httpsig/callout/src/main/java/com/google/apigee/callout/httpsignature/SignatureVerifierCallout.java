@@ -1,7 +1,7 @@
 // SignatureVerifierCallout.java
 //
 // A callout for Apigee Edge that verifies an HTTP Signature.
-// See http://tools.ietf.org/html/draft-cavage-http-signatures-04 .
+// See http://tools.ietf.org/html/draft-cavage-http-signatures-11 .
 //
 // Copyright 2015-2020 Google LLC.
 //
@@ -26,7 +26,6 @@ import com.apigee.flow.execution.IOIntensive;
 import com.apigee.flow.execution.spi.Execution;
 import com.apigee.flow.message.MessageContext;
 import com.google.apigee.util.TimeResolver;
-import com.google.common.base.Splitter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -40,7 +39,6 @@ import java.util.stream.Collectors;
 
 @IOIntensive
 public class SignatureVerifierCallout extends CalloutBase implements Execution {
-  private static final Splitter spaceSplitter = Splitter.on(' ').trimResults();
   public static final DateTimeFormatter DATE_FORMATTERS[] = {
     DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX"),
     DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss zzz"),
@@ -105,22 +103,7 @@ public class SignatureVerifierCallout extends CalloutBase implements Execution {
   }
 
   private List<String> getRequiredHeaders(MessageContext msgCtxt) {
-    String headers = (String) this.properties.get("headers");
-    if (headers == null) {
-      return null;
-    }
-    headers = headers.trim();
-    if (headers.equals("")) {
-      return null;
-    }
-    headers = PackageUtils.resolvePropertyValue(headers, msgCtxt);
-    if (headers == null || headers.equals("")) {
-      // Uncomment the below to force configuration to require a
-      // headers property
-      // throw new IllegalStateException("headers resolves to an empty string");
-      return null;
-    }
-    return spaceSplitter.splitToList(headers);
+    return getHeaders(msgCtxt);
   }
 
   private static ZonedDateTime parseDate(String dateString) {
@@ -305,7 +288,6 @@ public class SignatureVerifierCallout extends CalloutBase implements Execution {
     } catch (Exception e) {
       if (getDebug()) {
         String stacktrace = PackageUtils.getStackTraceAsString(e);
-        System.out.printf("%s\n", stacktrace);
         msgCtxt.setVariable(varName("stacktrace"), stacktrace);
       }
       setExceptionVariables(e, msgCtxt);

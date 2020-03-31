@@ -6,6 +6,7 @@ import com.google.common.io.BaseEncoding;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
@@ -63,8 +64,6 @@ class KeyProviderImpl implements KeyProvider {
   public PublicKey getPublicKey()
       throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, CertificateException,
           KeyParseException {
-    String publicKeyString = (String) properties.get("public-key");
-
     // There are various ways to specify the public key.
 
     String pemfile = (String) properties.get("pemfile");
@@ -73,6 +72,7 @@ class KeyProviderImpl implements KeyProvider {
     }
 
     // Try "public-key"
+    String publicKeyString = (String) properties.get("public-key");
     if (publicKeyString != null) {
       if (publicKeyString.equals("")) {
         throw new IllegalStateException("public-key must be non-empty");
@@ -154,5 +154,30 @@ class KeyProviderImpl implements KeyProvider {
     //   throw new InvalidKeySpecException("invalid pemfile format");
     // }
     // return key;
+  }
+
+  public PrivateKey getPrivateKey() throws Exception {
+    String privateKeyString = (String) properties.get("private-key");
+    if (privateKeyString == null) {
+      throw new IllegalStateException("private-key must be non-empty");
+    }
+    privateKeyString = PackageUtils.resolvePropertyValue(privateKeyString, c);
+
+    if (privateKeyString == null || privateKeyString.equals("")) {
+      throw new IllegalStateException(
+          "private-key variable resolves to empty; invalid when algorithm is RS*");
+    }
+
+    // clear any leading whitespace on each line
+    String privateKeyPassword = (String) properties.get("private-key-password");
+    if (privateKeyPassword != null) {
+      privateKeyPassword = PackageUtils.resolvePropertyValue(privateKeyPassword, c);
+    }
+
+    try {
+      return KeyUtils.decodePrivateKey(privateKeyString, privateKeyPassword);
+    } catch (KeyParseException ex) {
+      throw new InvalidKeySpecException("cannot read private key");
+    }
   }
 }

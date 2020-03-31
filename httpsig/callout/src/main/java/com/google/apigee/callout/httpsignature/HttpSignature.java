@@ -18,11 +18,13 @@
 
 package com.google.apigee.callout.httpsignature;
 
-import com.google.common.base.Splitter;
+import com.google.apigee.util.TimeResolver;
 import com.google.common.io.BaseEncoding;
 import java.nio.charset.StandardCharsets;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,20 +37,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 public class HttpSignature {
-    private static final Splitter spaceSplitter = Splitter.on(' ').trimResults();
-    //private static final Splitter commaSplitter = Splitter.on(',').trimResults();
-    private static final Pattern signatureElementPattern = Pattern.compile("([a-zA-z]+)=\"([^\"]+)\"");
-
     private Map<String, Object> params = new HashMap<String, Object>();
-
-    // public static final Map<String, String> supportedRsaAlgorithms;
-    // static {
-    //     Map<String, String> a = new HashMap<String, String>();
-    //     a.put("rsa-sha1", "SHA1withRSA");
-    //     a.put("rsa-sha256", "SHA256withRSA");
-    //     a.put("rsa-sha512", "SHA512withRSA");
-    //     supportedRsaAlgorithms = Collections.unmodifiableMap(a);
-    // }
 
     private static final Map<String, String> supportedAlgorithms;
     private static final List<String> knownSignatureItems;
@@ -77,9 +66,33 @@ public class HttpSignature {
         return alg.equals("hs2019") || supportedAlgorithms.containsKey(alg);
     }
 
-    public HttpSignature(String s) throws IllegalStateException {
-        parseHttpSignatureString(s);
+    public static HttpSignature forVerification(String s) throws IllegalStateException {
+        HttpSignature sig = new HttpSignature();
+        sig.parseHttpSignatureString(s);
+        sig._mode = Mode.VERIFYING;
+        return sig;
     }
+
+    public static HttpSignature forGeneration(boolean wantCreated, String expiresIn)
+    {
+        HttpSignature sig = new HttpSignature();
+        if (wantCreated) {
+            long now = ZonedDateTime.now().toEpochSecond();
+            sig.params.put("created", (Integer) Math.toIntExact(now));
+
+            if (expiresIn != null) {
+                Long lifetimeInSeconds = TimeResolver.resolveExpression(expiresIn);
+                sig.params.put("expires", (Integer) Math.toIntExact(now + lifetimeInSeconds));
+            }
+        }
+        sig._mode = Mode.SIGNING;
+        return sig;
+    }
+
+    private HttpSignature() { }
+
+    enum Mode { UNSET, SIGNING, VERIFYING; }
+    private Mode _mode = Mode.UNSET;
 
     public Integer getCreated() { return (Integer) params.get("created"); }
     public Integer getExpires() { return (Integer) params.get("expires"); }
@@ -94,7 +107,7 @@ public class HttpSignature {
         if (!params.containsKey("headers")) { return null; }
         return (List<String>) params.get("headers");
     }
-    public void setHeaders(String[] value) { params.put("headers", value); }
+    public void setHeaders(List<String> value) { params.put("headers", value); }
 
     public String getSignatureString() { return (String) params.get("signature"); }
     public byte[] getSignatureBytes() {
@@ -115,6 +128,9 @@ public class HttpSignature {
                                         KeyProvider kp,
                                         Callable<String> hs2019AlgorithmSupplier)
         throws Exception {
+
+        if (_mode != Mode.VERIFYING)
+                throw new IllegalStateException("wrong mode");
 
         if (supportedAlgorithms.containsKey(algorithm)) {
             String javaAlgoName = HttpSignature.supportedAlgorithms.get(algorithm);
@@ -155,8 +171,8 @@ public class HttpSignature {
     }
 
     private SigVerificationResult verifyWithRsa(String javaAlgoName,
-                                  ReadOnlyHttpSigHeaderMap hmap,
-                                  KeyProvider kp) throws Exception {
+                                                ReadOnlyHttpSigHeaderMap hmap,
+                                                KeyProvider kp) throws Exception {
         SigVerificationResult result = new SigVerificationResult();
         result.signingBase = this.getSigningBase(hmap);
         result.isValid = false;
@@ -166,6 +182,95 @@ public class HttpSignature {
         sig.update(result.signingBase.getBytes(StandardCharsets.UTF_8));
         byte[] signatureBytes = this.getSignatureBytes();
         result.isValid = sig.verify(signatureBytes);
+        return result;
+    }
+
+    public SigGenerationResult sign(String algorithm,
+                                           List<String> headersToSign,
+                                           ReadOnlyHttpSigHeaderMap hmap,
+                                           KeyProvider kp,
+                                           Callable<String> hs2019AlgorithmSupplier)
+        throws Exception {
+
+        if (_mode != Mode.SIGNING)
+            throw new IllegalStateException("wrong mode");
+
+        if (supportedAlgorithms.containsKey(algorithm)) {
+            String javaAlgoName = HttpSignature.supportedAlgorithms.get(algorithm);
+            if (javaAlgoName.endsWith("withRSA")) {
+                return signWithRsa(algorithm, javaAlgoName, headersToSign, hmap, kp);
+            }
+            else {
+                return signWithHmac(algorithm, javaAlgoName, headersToSign, hmap, kp);
+            }
+        }
+        else if (algorithm.equals("hs2019")) {
+            String desiredFlavor = hs2019AlgorithmSupplier.call();
+            if (desiredFlavor.equals("rsa")) {
+                return signWithRsa(algorithm, "SHA512withRSA/PSS", headersToSign, hmap, kp);
+            }
+            else if (desiredFlavor.equals("hmac")) {
+                return signWithHmac(algorithm, "HmacSHA512", headersToSign, hmap, kp);
+            }
+            else {
+                throw new IllegalStateException("Unsupported algorithm");
+            }
+        }
+        throw new IllegalStateException("Unsupported algorithm");
+    }
+
+    private SigGenerationResult setupSigning(String algorithm,
+                                             List<String> headersToSign,
+                                             ReadOnlyHttpSigHeaderMap hmap) {
+        SigGenerationResult interimResult = new SigGenerationResult();
+        this.params.put("algorithm", algorithm);
+        interimResult.algorithm = algorithm;
+
+        List<String> copy = new ArrayList<String>();
+        copy.addAll(headersToSign);
+
+        // insure created and expires are present if necessary
+        if (null!=params.get("created") && !headersToSign.contains("created")) {
+            copy.add("created");
+            interimResult.created = (Integer) params.get("created");
+        }
+        if (null!=params.get("expires") && !headersToSign.contains("expires")) {
+            copy.add("expires");
+            interimResult.expires = (Integer) params.get("expires");
+        }
+        this.setHeaders(copy);
+        interimResult.signingBase = this.getSigningBase(hmap);
+        interimResult.headers = String.join(" ", copy);
+        return interimResult;
+    }
+
+    private SigGenerationResult signWithHmac(String algorithm,
+                                                    String javaAlgoName,
+                                                    List<String> headersToSign,
+                                                    ReadOnlyHttpSigHeaderMap hmap,
+                                                    KeyProvider kp) throws Exception {
+        SigGenerationResult result = setupSigning(algorithm, headersToSign, hmap);
+        byte[] signingKey = kp.getSecretKey();
+        SecretKeySpec key = new SecretKeySpec(signingKey, javaAlgoName);
+        Mac hmac = Mac.getInstance(javaAlgoName);
+        hmac.init(key);
+        result.computedSignature =
+            BaseEncoding.base64().encode( hmac.doFinal(result.signingBase.getBytes("UTF-8")) );
+        return result;
+    }
+
+    private SigGenerationResult signWithRsa(String algorithm,
+                                            String javaAlgoName,
+                                            List<String> headersToSign,
+                                            ReadOnlyHttpSigHeaderMap hmap,
+                                            KeyProvider kp) throws Exception {
+        SigGenerationResult result = setupSigning(algorithm, headersToSign, hmap);
+        Signature sig = Signature.getInstance(javaAlgoName);
+        PrivateKey privateKey = kp.getPrivateKey();
+        sig.initSign(privateKey);
+        sig.update(result.signingBase.getBytes(StandardCharsets.UTF_8));
+        result.computedSignature =
+            BaseEncoding.base64().encode( sig.sign() );
         return result;
     }
 
@@ -181,10 +286,14 @@ public class HttpSignature {
         for (String name : headers) {
             if (!sigBase.equals("")) { sigBase += "\n";}
             if (name.equals("created")) {
+                if (!this.params.get("algorithm").equals("hs2019"))
+                    throw new IllegalStateException("invalid parameter: created");
                 v = this.getCreated().toString();
                 name = "(created)";
             }
             else if (name.equals("expires")) {
+                if (!this.params.get("algorithm").equals("hs2019"))
+                    throw new IllegalStateException("invalid parameter: expires");
                 v = this.getExpires().toString();
                 name = "(expires)";
             }

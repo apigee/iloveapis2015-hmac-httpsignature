@@ -4,5 +4,5 @@
     <Property name='public-key'>{verifyapikey.VerifyApiKey-1.public_key}</Property>
   </Properties>
   <ClassName>com.google.apigee.callout.httpsignature.SignatureVerifierCallout</ClassName>
-  <ResourceURL>java://edge-custom-httpsig-20200330.jar</ResourceURL>
+  <ResourceURL>java://edge-custom-httpsig-20200331.jar</ResourceURL>
 </JavaCallout>

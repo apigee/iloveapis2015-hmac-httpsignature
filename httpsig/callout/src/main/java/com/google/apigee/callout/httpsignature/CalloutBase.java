@@ -19,22 +19,28 @@
 package com.google.apigee.callout.httpsignature;
 
 import com.apigee.flow.message.MessageContext;
+import com.google.common.base.Splitter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public abstract class CalloutBase {
+  public static final String REQUEST_TARGET = "(request-target)";
   private static final String _varprefix = "httpsig_";
   private static final String commonError = "^(.+?)[:;] (.+)$";
   private static final Pattern commonErrorPattern = Pattern.compile(commonError);
   protected static final Function<Iterable, String> commaJoiner = getJoiner(",");
   protected static final Function<Iterable, String> spaceJoiner = getJoiner(" ");
 
+  private static final Splitter spaceSplitter = Splitter.on(' ').trimResults();
   protected Map<String, String> properties; // read-only
 
   public CalloutBase(Map properties) {
@@ -102,8 +108,27 @@ public abstract class CalloutBase {
       throw new IllegalStateException("fullsignature is empty.");
     }
 
-    HttpSignature httpsig = new HttpSignature(signature);
+    HttpSignature httpsig = HttpSignature.forVerification(signature);
     return httpsig;
+  }
+
+  protected List<String> getHeaders(MessageContext msgCtxt) {
+    String headers = (String) this.properties.get("headers");
+    if (headers == null) {
+      return null;
+    }
+    headers = headers.trim();
+    if (headers.equals("")) {
+      return null;
+    }
+    headers = PackageUtils.resolvePropertyValue(headers, msgCtxt);
+    if (headers == null || headers.equals("")) {
+      // Uncomment the below to force configuration to require a
+      // headers property
+      // throw new IllegalStateException("headers resolves to an empty string");
+      return null;
+    }
+    return spaceSplitter.splitToList(headers);
   }
 
   protected boolean getDebug() {
@@ -123,4 +148,39 @@ public abstract class CalloutBase {
       msgCtxt.setVariable(varName("error"), error);
     }
   }
+
+  protected class EdgeHeaderProvider implements ReadOnlyHttpSigHeaderMap {
+    MessageContext c;
+
+    public EdgeHeaderProvider(MessageContext msgCtxt) {
+      c = msgCtxt;
+    }
+
+    public String getHeaderValue(String key) {
+      String value = null;
+
+      if (key.equals(REQUEST_TARGET)) {
+        try {
+          // in HTTP Signature, the "path" includes the url path + query
+          URI uri = new URI(c.getVariable("proxy.url").toString());
+
+          String path = uri.getPath();
+          if (uri.getQuery() != null) {
+            path += "?" + uri.getQuery();
+          }
+
+          value = c.getVariable("request.verb");
+          if (value == null || value.equals("")) value = "unknown verb";
+          value = value.toLowerCase() + " " + path;
+
+        } catch (URISyntaxException exc1) {
+          value = "none";
+        }
+      } else {
+        value = c.getVariable("request.header." + key);
+      }
+      return value;
+    }
+  }
+
 }
