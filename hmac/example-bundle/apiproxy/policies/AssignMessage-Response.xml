@@ -2,7 +2,7 @@
   <DisplayName>AssignMessage Response</DisplayName>
   <IgnoreUnresolvedVariables>false</IgnoreUnresolvedVariables>
   <Set>
-    <Payload contentType='text/plain'>key: {hmac.key}
+    <Payload contentType='text/plain'>
 string-to-sign: {hmac.string-to-sign}
 algorithm: {hmac.alg}
 javaized algorithm: {hmac.javaizedAlg}

@@ -2,10 +2,10 @@
   <DisplayName>Java-CalcHmac-1</DisplayName>
   <Properties>
     <Property name="string-to-sign">{message.content}</Property>
-    <Property name="key">{request.queryparam.key}</Property>
+    <Property name="secret-key">{request.queryparam.key}</Property>
     <Property name="algorithm">{request.queryparam.alg}</Property>
     <Property name="debug">true</Property>
   </Properties>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://apigee-hmac-edge-callout-1.0.4.jar</ResourceURL>
+  <ResourceURL>java://apigee-hmac-callout-20200407.jar</ResourceURL>
 </JavaCallout>

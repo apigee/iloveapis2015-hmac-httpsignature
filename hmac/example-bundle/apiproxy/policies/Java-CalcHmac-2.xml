@@ -2,12 +2,12 @@
   <DisplayName>Java-CalcHmac-2</DisplayName>
   <Properties>
     <!-- name of the variable that holds the key -->
-    <Property name="key">{request.queryparam.key}</Property>
+    <Property name="secret-key">{request.queryparam.key}</Property>
     <!-- name of the variable that holds the SHA algorithm -->
     <Property name="algorithm">{request.queryparam.alg}</Property>
     <Property name="string-to-sign">{request.header.date}|{request.verb}|{request.header.host}|{message.uri}</Property>
     <Property name="debug">true</Property>
   </Properties>
   <ClassName>com.apigee.callout.hmac.HmacCreatorCallout</ClassName>
-  <ResourceURL>java://apigee-hmac-edge-callout-1.0.4.jar</ResourceURL>
+  <ResourceURL>java://apigee-hmac-callout-20200407.jar</ResourceURL>
 </JavaCallout>

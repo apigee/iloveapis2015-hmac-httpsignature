@@ -5,14 +5,17 @@ import com.apigee.flow.execution.ExecutionResult;
 import com.apigee.flow.execution.IOIntensive;
 import com.apigee.flow.execution.spi.Execution;
 import com.apigee.flow.message.MessageContext;
-import java.io.StringWriter;
+import com.google.common.io.BaseEncoding;
 import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Base64;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.crypto.Mac;
@@ -50,16 +53,46 @@ public class HmacCreatorCallout implements Execution {
         return resolvedString;
     }
 
-    private String getKey(MessageContext msgCtxt) throws Exception {
-        String key = (String) this.properties.get("key");
-        if (key == null || key.equals("")) {
-            throw new IllegalStateException("key is not specified or is empty.");
+    private byte[] getSecretKey(MessageContext msgCtxt) throws IllegalStateException {
+        // for back-compatibility, check "key" first.
+        String encodedKey = (String) properties.get("secret-key");
+        if (encodedKey == null || encodedKey.equals("")) {
+            encodedKey = (String) properties.get("key");
         }
-        key = resolvePropertyValue(key, msgCtxt);
-        if (key == null || key.equals("")) {
-            throw new IllegalStateException("key is null or empty.");
+        if (encodedKey == null || encodedKey.equals("")) {
+            throw new IllegalStateException("configuration error: secret-key is not specified or is empty.");
         }
-        return key;
+        encodedKey = resolvePropertyValue(encodedKey, msgCtxt);
+        if (encodedKey == null || encodedKey.equals("")) {
+            throw new IllegalStateException("configuration error: secret-key is null or empty.");
+        }
+
+        String keyEncoding = (String) properties.get("secret-key-encoding");
+        if (keyEncoding == null || keyEncoding.equals("")) {
+            return encodedKey.getBytes(StandardCharsets.UTF_8);
+        }
+        keyEncoding = resolvePropertyValue(keyEncoding, msgCtxt);
+        if (keyEncoding == null || keyEncoding.equals("")) {
+            return encodedKey.getBytes(StandardCharsets.UTF_8);
+        }
+
+        final Optional<SecretKeyEncoding> parsedEncoding =
+            SecretKeyEncoding.getValueOf(keyEncoding.toUpperCase());
+
+        if (parsedEncoding.isPresent()) {
+            switch (parsedEncoding.get()) {
+                case HEX:
+                case BASE16:
+                    return BaseEncoding.base16()
+                        .lowerCase()
+                        .decode(encodedKey.replaceAll("\\s", "").toLowerCase());
+                case BASE64:
+                    return BaseEncoding.base64().decode(encodedKey);
+                case BASE64URL:
+                    return BaseEncoding.base64Url().decode(encodedKey);
+            }
+        }
+        return encodedKey.getBytes(StandardCharsets.UTF_8);
     }
 
     private String getExpectedHmac(MessageContext msgCtxt) throws Exception {
@@ -146,7 +179,7 @@ public class HmacCreatorCallout implements Execution {
                                    ExecutionContext exeCtxt) {
         try {
             clearVariables(msgCtxt);
-            String signingKey = getKey(msgCtxt);
+            byte[] signingKey = getSecretKey(msgCtxt);
             String stringToSign = getStringToSign(msgCtxt);
             String algorithm = getAlgorithm(msgCtxt);
             boolean debug = getDebug(msgCtxt);
@@ -158,16 +191,16 @@ public class HmacCreatorCallout implements Execution {
             }
 
             Mac hmac = Mac.getInstance(javaizedAlg);
-            SecretKeySpec key = new SecretKeySpec(signingKey.getBytes(), javaizedAlg);
+            SecretKeySpec key = new SecretKeySpec(signingKey, javaizedAlg);
             hmac.init(key);
-            byte[] hmacBytes = hmac.doFinal(stringToSign.getBytes("UTF-8"));
+            byte[] hmacBytes = hmac.doFinal(stringToSign.getBytes(StandardCharsets.UTF_8));
             String sigHex = HexEncoder.encodeToString(hmacBytes);
             String sigB64 = base64Encoder.encodeToString(hmacBytes);
             String sigB64Url = sigB64.replaceAll("\\+","-").replaceAll("\\/","_").replaceAll("=","");
 
-            if (debug) {
-                msgCtxt.setVariable(varName("key"), signingKey);
-            }
+            // if (debug) {
+            //     msgCtxt.setVariable(varName("key"), signingKey);
+            // }
             msgCtxt.setVariable(varName("string-to-sign"), stringToSign);
             msgCtxt.setVariable(varName("signature.hex"), sigHex);
             msgCtxt.setVariable(varName("signature.b64"), sigB64);

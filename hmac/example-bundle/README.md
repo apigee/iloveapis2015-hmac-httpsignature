@@ -31,7 +31,6 @@ curl -i -X POST -d 'the quick brown fox...' \
 The response is plain text like this:
 
 ```
-key: secret123
 string-to-sign: the quick brown fox...
 algorithm: sha-256
 javaized algorithm: HmacSHA256
@@ -74,7 +73,6 @@ use to send Date headers to servers.  The result of this call looks like
 this:
 
 ```
-key: secret123
 string-to-sign: Wed, 07 Oct 2015 21:10:19 GMT|POST|iloveapis2015-test.apigee.net|/hmac/headers?alg=sha-256&key=secret123
 algorithm: sha-256
 javaized algorithm: HmacSHA256
@@ -85,8 +83,7 @@ signature-b64: LZrx5HHVk4VGJ6/vS4MzL1nMzE0OIbE5LyOTJOSAq9Y=
 
 ### Help
 
-Finally,
-you can get help on this demonstration API Proxy like this:
+Finally, you can get help on this demonstration API Proxy like this:
 
 ```
     curl -i -X GET  https://$ORG-$ENV.apigee.net/hmac
