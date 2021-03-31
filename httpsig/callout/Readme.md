@@ -114,7 +114,7 @@ Between those two policies you will use a step that dereferences the keyId into
 some kind of key material, either a public key or a symmetric key.
 
 After including those policies in your proxy, use the Edge UI, or a command-line
-tool like [importAndDeploy.js](https://github.com/DinoChiesa/apigee-edge-js/blob/master/examples/importAndDeploy.js)
+tool like [importAndDeploy.js](https://github.com/DinoChiesa/apigee-edge-js-examples/blob/master/importAndDeploy.js)
 or similar to import the proxy into an Edge organization, and then deploy the
 proxy.
 
