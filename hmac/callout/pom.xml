@@ -14,7 +14,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.version>1.8</java.version>
     <jmockit.version>1.7</jmockit.version>
-    <guava.version>29.0-jre</guava.version>
+    <guava.version>32.0.0-jre</guava.version>
     <testng.version>6.8.7</testng.version>
     <apiproxy.java.rsrc.dir>../example-bundle/apiproxy/resources/java</apiproxy.java.rsrc.dir>
   </properties>
