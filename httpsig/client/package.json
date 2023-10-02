@@ -18,7 +18,7 @@
   "main": "httpSigClient.js",
   "dependencies": {
     "node-getopt": "0.2.3",
-    "debug": "4.1.0",
+    "debug": "4.3.1",
     "http-signature": "git+https://github.com/DinoChiesa/node-http-signature"
   }
 }
